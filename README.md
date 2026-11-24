@@ -45,7 +45,7 @@ A voice-first prototype that gives skilled informal workers a portable, human-ve
 | Problem brief | [docs/problem-brief.md](docs/problem-brief.md) |
 | GitHub repository | https://github.com/kirtisharma-sudo/hunarsetu |
 | Live demo | https://kirtisharma-sudo.github.io/hunarsetu/ |
-| Demo video |  |
+| Demo video | https://drive.google.com/file/d/1UB8kRK9wP8RiSVYZin7pEF-3gI8oEwuJ/view?usp=sharing |
 | Explanation of value | [Our solution](#our-solution) and [docs/problem-brief.md](docs/problem-brief.md) |
 
 ## Introduction
@@ -136,7 +136,7 @@ Screenshots have not been added yet. Capture them from the running app and place
 ## Demo
 
 - **Live demo:** https://kirtisharma-sudo.github.io/hunarsetu/
-- **Demo video:** 
+- **Demo video:** https://drive.google.com/file/d/1UB8kRK9wP8RiSVYZin7pEF-3gI8oEwuJ/view?usp=sharing **
 - **Run locally:** open `index.html` in Chrome, then follow [docs/demo-script.md](docs/demo-script.md). The in-app Demo guide (sliders button, top right) lists the same nine steps and jumps to the right role.
 
 ## Technology
