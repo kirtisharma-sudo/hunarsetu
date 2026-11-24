@@ -44,8 +44,8 @@ A voice-first prototype that gives skilled informal workers a portable, human-ve
 |---|---|
 | Problem brief | [docs/problem-brief.md](docs/problem-brief.md) |
 | GitHub repository | https://github.com/kirtisharma-sudo/hunarsetu |
-| Live demo | (https://kirtisharma-sudo.github.io/hunarsetu/) |
-| Demo video | _add video URL_ |
+| Live demo | https://kirtisharma-sudo.github.io/hunarsetu/ |
+| Demo video |  |
 | Explanation of value | [Our solution](#our-solution) and [docs/problem-brief.md](docs/problem-brief.md) |
 
 ## Introduction
