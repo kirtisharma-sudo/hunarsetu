@@ -1,0 +1,16 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('Assist Registration')"></h1>
+  <p class="text-sm text-slate-600">Sit with the worker. Ask them to speak into the phone, then check the details together. Register only with their consent.</p></section>
+
+{{>p_onb}}
+
+<template x-if="onb && onb.step===3 && onb.done">
+  <section class="card space-y-3 text-center">
+    <i class="fa-solid fa-circle-check text-4xl text-emerald-600"></i>
+    <h2 class="text-xl font-extrabold" x-text="onb.done.name + ' is registered'"></h2>
+    <p class="text-sm text-slate-600">The worker can now take a skill test and apply for jobs. You can help with the next step.</p>
+    <div class="grid grid-cols-1 gap-2">
+      <button class="btn btn-primary" @click="afInit(onb.done.id); tab('m_verify')"><i class="fa-solid fa-video"></i> Help with a skill video</button>
+      <button class="btn btn-ghost" @click="onbReset()"><i class="fa-solid fa-user-plus"></i> Register another worker</button>
+    </div>
+  </section>
+</template>

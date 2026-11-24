@@ -1,0 +1,114 @@
+<!-- Shared onboarding wizard: worker self-registration and Hunar Mitra assisted registration -->
+<template x-if="onb && onb.step===1">
+  <section class="card space-y-4 form-narrow">
+    <div>
+      <p class="h-sec">Step 1 of 2</p>
+      <h2 class="text-xl font-extrabold text-slate-900" x-text="role==='mitra' ? 'Record the worker’s voice' : tr('Record my voice')"></h2>
+      <p class="text-base text-slate-600">Say your name, how many years you have worked, your trade and the work you do.</p>
+      <p class="text-base font-semibold text-slate-800" lang="hi">अपना नाम, कितने साल काम किया, और कौन सा काम आता है - बोलिए।</p>
+    </div>
+
+    <div class="note note-info text-sm" lang="hi">उदाहरण: "मेरा नाम रमेश है। मैं 8 साल से इलेक्ट्रीशियन का काम कर रहा हूँ। वायरिंग, पंखा और DB बॉक्स का काम करता हूँ।"</div>
+
+    <div>
+      <label class="lbl" for="onblang">Language you will speak</label>
+      <select id="onblang" class="inp" x-model="onb.lang" :disabled="recState.on"><template x-for="l in LANGS" :key="l.code"><option :value="l.code" x-text="l.name"></option></template></select>
+    </div>
+
+    <div class="rounded-2xl bg-slate-900 p-4 flex flex-col items-center gap-3">
+      <div class="h-10 flex items-center gap-1" aria-hidden="true"><template x-for="(h, i) in recBars()" :key="i"><div class="wavebar" :style="'height:' + h + 'px; opacity:' + (recState.on ? 1 : .35)"></div></template></div>
+      <button class="w-20 h-20 rounded-full text-white text-3xl flex items-center justify-center shadow-xl transition active:scale-95" :class="recState.on && recState.target==='onb' ? 'bg-red-600 rec-pulse' : 'bg-amber-400 text-slate-900'"
+        @click="recState.on ? recStop() : recStart('onb')" :aria-label="recState.on ? 'Stop recording' : 'Start recording'">
+        <i class="fa-solid" :class="recState.on && recState.target==='onb' ? 'fa-stop' : 'fa-microphone'"></i>
+      </button>
+      <p class="text-sm font-mono text-slate-200" x-text="recState.on && recState.target==='onb' ? ('Recording ' + mmss(recState.secs)) : (onb.audio ? ('Recorded ' + mmss(onb.audio.dur)) : 'Tap the microphone and speak')"></p>
+    </div>
+
+    <p class="note note-bad" x-show="recState.err" x-text="recState.err"></p>
+
+    <div x-show="onb.audio" class="space-y-2">
+      <p class="h-sec">Your recording</p>
+      <audio controls class="w-full" :src="onb.audio && onb.audio.url"></audio>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="btn btn-ghost btn-sm" @click="recDelete('onb'); recStart('onb')"><i class="fa-solid fa-rotate-left"></i> Record again</button>
+        <button class="btn btn-ghost btn-sm text-red-700" @click="recDelete('onb')"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <label class="lbl" for="trans">What was said (written text)</label>
+      <p class="text-xs text-slate-500" x-show="recState.on && onb.sttTried">Live text from this browser's speech recognition appears below as you speak.</p>
+      <p class="note note-warn text-xs" x-show="!sttAvail() && !settings.sttUrl">This browser cannot turn speech into text and no speech service is set up, so your voice is saved as a recording only. Type what you said below, or use the sample text.</p>
+      <textarea id="trans" rows="4" class="inp" lang="hi" :placeholder="'Type here, or tap the sample text button'" x-model="onb.transcript" @input="onbTyped()"></textarea>
+      <p class="text-xs font-bold" :class="onb.transSource==='sample' ? 'text-amber-700' : 'text-slate-500'" x-show="onb.transSource" x-text="transLabel(onb.transSource)"></p>
+      <div class="flex flex-wrap gap-2">
+        <button class="btn btn-ghost btn-sm" @click="onbSample()"><i class="fa-solid fa-file-lines"></i> Use sample text (demo)</button>
+        <button class="btn btn-ghost btn-sm" x-show="onb.transcript" @click="onb.transcript=''; onb.transSource=''"><i class="fa-solid fa-eraser"></i> Clear</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-lg" @click="onbNext()" :disabled="recState.on"><span x-text="tr('Next')"></span> <i class="fa-solid fa-arrow-right"></i></button>
+    <p class="text-xs text-center text-slate-500">No recording? You can continue and fill the details by hand.</p>
+  </section>
+</template>
+
+<template x-if="onb && onb.step===2">
+  <section class="card space-y-4 form-narrow">
+    <div>
+      <p class="h-sec">Step 2 of 2</p>
+      <h2 class="text-xl font-extrabold text-slate-900">Check and correct the details</h2>
+      <p class="text-sm text-slate-600">Details picked from your words are only a guess. Please check every box.</p>
+    </div>
+    <div class="note note-warn text-xs" x-show="onb.transSource==='sample'"><b>Sample text was used.</b> The fields below were filled from demo text, not from your voice.</div>
+    <button class="btn btn-ghost btn-sm" x-show="onb.transcript" @click="onbFill()"><i class="fa-solid fa-wand-magic-sparkles"></i> Fill again from the text</button>
+
+    <div class="flex items-center gap-3">
+      <div class="w-16 h-16 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xl font-black overflow-hidden shrink-0">
+        <img x-show="onb.f.avatar" :src="onb.f.avatar" alt="Photo" class="w-full h-full object-cover"><span x-show="!onb.f.avatar" x-text="initials(onb.f.name) || '?'"></span></div>
+      <label class="btn btn-ghost btn-sm cursor-pointer"><i class="fa-solid fa-camera"></i> Add photo<input type="file" accept="image/*" capture="user" class="hidden" @change="onbAvatar($event)"></label>
+    </div>
+
+    <div><label class="lbl" for="f_name" x-text="tr('Name')"></label><input id="f_name" class="inp" x-model="onb.f.name" autocomplete="off"><p class="err" x-show="errs.name" x-text="errs.name"></p></div>
+    <div><label class="lbl" for="f_phone">Phone (optional, 10 digits)</label><input id="f_phone" class="inp" inputmode="numeric" maxlength="10" x-model="onb.f.phone"><p class="err" x-show="errs.phone" x-text="errs.phone"></p></div>
+    <div>
+      <span class="lbl" x-text="tr('Trade')"></span>
+      <div class="flex flex-wrap gap-2"><template x-for="t in TRADES" :key="t"><button type="button" class="pick" :class="onb.f.trade===t && 'pick-on'" @click="onb.f.trade=t; onb.f.skills=onb.f.skills.filter(s => s.startsWith('custom:'))"><i class="fa-solid" :class="TRADE_ICON[t]"></i><span x-text="t"></span></button></template></div>
+      <p class="err" x-show="errs.trade" x-text="errs.trade"></p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="lbl" for="f_exp" x-text="tr('Experience (years)')"></label><input id="f_exp" class="inp" type="number" min="0" max="60" inputmode="numeric" x-model="onb.f.experienceYears"><p class="err" x-show="errs.experienceYears" x-text="errs.experienceYears"></p></div>
+      <div><label class="lbl" for="f_loc" x-text="tr('Area where you live')"></label><input id="f_loc" class="inp" list="localities" x-model="onb.f.location" autocomplete="off"><p class="err" x-show="errs.location" x-text="errs.location"></p></div>
+    </div>
+    <div>
+      <span class="lbl" x-text="tr('Skills')"></span>
+      <div class="flex flex-wrap gap-2">
+        <template x-for="s in skillsOfTrade(onb.f.trade)" :key="s.id"><button type="button" class="pick" :class="onb.f.skills.includes(s.id) && 'pick-on'" @click="toggleIn(onb.f.skills, s.id)"><i class="fa-solid" :class="onb.f.skills.includes(s.id) ? 'fa-square-check' : 'fa-square'"></i><span x-text="lang==='hi' ? s.hi : s.name"></span></button></template>
+        <template x-for="s in onb.f.skills.filter(x => x.startsWith('custom:'))" :key="s"><button type="button" class="pick pick-on" @click="toggleIn(onb.f.skills, s)"><i class="fa-solid fa-square-check"></i><span x-text="skName(s)"></span></button></template>
+      </div>
+      <div class="flex gap-2 mt-2"><input class="inp" placeholder="Another skill (optional)" x-model="customSkill" @keydown.enter.prevent="addCustomSkill(onb.f)"><button type="button" class="btn btn-ghost" @click="addCustomSkill(onb.f)" aria-label="Add skill"><i class="fa-solid fa-plus"></i></button></div>
+      <p class="text-xs text-slate-500 mt-1">These are your own claims. They become "Ustad reviewed" only after an Ustad checks them.</p>
+    </div>
+    <div>
+      <span class="lbl" x-text="tr('Languages')"></span>
+      <div class="flex flex-wrap gap-2"><template x-for="l in ['Hindi','English','Punjabi','Urdu','Haryanvi','Bhojpuri']" :key="l"><button type="button" class="pick" :class="onb.f.languages.includes(l) && 'pick-on'" @click="toggleIn(onb.f.languages, l)" x-text="l"></button></template></div>
+      <p class="err" x-show="errs.languages" x-text="errs.languages"></p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="lbl" for="f_av">Availability</label><select id="f_av" class="inp" x-model="onb.f.availability"><option value="available">Available now</option><option value="soon">Available soon</option><option value="busy">Busy</option></select></div>
+      <div><label class="lbl" for="f_rad">Work radius</label><select id="f_rad" class="inp" x-model.number="onb.f.radiusKm"><option value="5">5 km</option><option value="10">10 km</option><option value="15">15 km</option><option value="25">25 km</option><option value="40">40 km</option></select></div>
+    </div>
+    <div><label class="lbl" for="f_cp">How should contractors contact you?</label><select id="f_cp" class="inp" x-model="onb.f.contactPref"><option value="whatsapp">WhatsApp</option><option value="call">Phone call</option><option value="via_mitra">Through my Hunar Mitra</option></select></div>
+
+    <div class="note note-warn" x-show="role==='mitra'">
+      <label class="flex items-start gap-3 cursor-pointer"><input type="checkbox" class="mt-1 w-6 h-6 shrink-0" x-model="onb.consent"><span class="text-sm"><b>Worker consent.</b> I have explained this to the worker in their language. They agree to create this profile and know that their name, trade, skills and area will be visible to contractors.</span></label>
+      <p class="err" x-show="errs.consent" x-text="errs.consent"></p>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2">
+      <button class="btn btn-ghost" @click="onb.step=1"><i class="fa-solid fa-arrow-left"></i></button>
+      <button class="btn btn-green col-span-2" @click="onbSave()" :disabled="busy==='stt'"><i class="fa-solid fa-check"></i> <span x-text="role==='mitra' ? 'Register worker' : tr('Save')"></span></button>
+    </div>
+  </section>
+</template>
+
+<datalist id="localities"><template x-for="l in LOCALITIES" :key="l.name"><option :value="l.name"></option></template></datalist>

@@ -1,0 +1,71 @@
+<button class="text-sm font-bold text-slate-600" @click="back()"><i class="fa-solid fa-arrow-left"></i> <span x-text="tr('Back')"></span></button>
+
+<section class="card space-y-2">
+  <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 font-black flex items-center justify-center text-lg" x-text="initials(wk(A.workerId).name)"></div>
+    <div class="flex-1"><h1 class="text-lg font-extrabold" x-text="wk(A.workerId).name"></h1><p class="text-sm text-slate-600" x-text="wk(A.workerId).trade + ' / ' + wk(A.workerId).location"></p></div>
+    <button class="btn btn-ghost btn-sm" @click="go('u_worker', {id: A.workerId})">Profile</button></div>
+  <div class="grid grid-cols-2 gap-2 text-sm">
+    <div class="card-flat"><div class="text-xs text-slate-500">Claimed experience</div><b x-text="wk(A.workerId).experienceYears + ' years (self-declared)'"></b></div>
+    <div class="card-flat"><div class="text-xs text-slate-500">Skill shown</div><b x-text="skName(A.skillId)"></b></div>
+  </div>
+  <p class="text-sm italic text-slate-600" lang="hi" x-show="wk(A.workerId).voice && wk(A.workerId).voice.transcript" x-text="'“' + (wk(A.workerId).voice && wk(A.workerId).voice.transcript) + '”'"></p>
+  <audio controls class="w-full" x-show="wk(A.workerId).voice && wk(A.workerId).voice.audioId && media(wk(A.workerId).voice.audioId)" :src="wk(A.workerId).voice && media(wk(A.workerId).voice.audioId)"></audio>
+  <span class="chip bg-slate-100 text-slate-500" x-show="A.sample">Sample record</span>
+</section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">Demonstration video</h2>
+  <video controls playsinline preload="metadata" class="w-full rounded-xl bg-black max-h-80" x-show="media(A.videoId)" :src="media(A.videoId)"></video>
+  <div class="note note-warn text-sm" x-show="!media(A.videoId)">No video is stored for this record. <span x-show="A.sample">It is a sample record, so there is nothing to watch. You can still practise the review flow.</span></div>
+  <p class="text-sm"><b>Task asked:</b> <span x-text="sk(A.skillId) && sk(A.skillId).task"></span></p>
+</section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">App screening observations (hints only)</h2>
+  <template x-for="c in (A.screening.checks || [])" :key="c.label"><div class="flex items-start gap-2 text-sm"><i class="fa-solid mt-1" :class="c.status==='ok' ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-amber-500'"></i><span><b x-text="c.label"></b>: <span class="text-slate-600" x-text="c.detail"></span></span></div></template>
+  <template x-for="o in (A.screening.observations || [])" :key="o.label"><div class="flex items-start gap-2 text-sm"><i class="fa-solid mt-1" :class="o.status==='seen' ? 'fa-eye text-emerald-600' : o.status==='not_seen' ? 'fa-eye-slash text-red-500' : 'fa-circle-question text-slate-400'"></i><span><b x-text="o.label"></b> <span class="text-slate-600" x-text="o.note"></span></span></div></template>
+  <p class="text-sm text-slate-500" x-show="!(A.screening.checks||[]).length && !(A.screening.observations||[]).length">No automatic checks were stored for this record.</p>
+  <div class="note note-info text-xs"><span x-text="A.screening.note || 'These are only basic video checks. They do not certify safety or technique.'"></span></div>
+</section>
+
+<section class="card space-y-1">
+  <h2 class="h-sec">History</h2>
+  <template x-for="(h, i) in (A.history || [])" :key="i"><div class="text-sm"><i class="fa-solid fa-circle text-[6px] text-slate-400 align-middle"></i> <span x-text="h.text"></span> <span class="text-xs text-slate-400" x-text="' / ' + fdate(h.at)"></span></div></template>
+  <p class="h-sec mt-3" x-show="endorsementsOf(A.workerId).length">Earlier endorsements</p>
+  <template x-for="e in endorsementsOf(A.workerId)" :key="e.id"><div class="text-sm"><b x-text="skName(e.skillId)"></b> by <span x-text="ust(e.ustadId).name + ', ' + fdate(e.date)"></span> <span class="chip" :class="levelChip(e.level).cls" x-text="levelChip(e.level).en"></span></div></template>
+</section>
+
+<!-- Decision form (only while pending) -->
+<template x-if="['submitted','reassessment_requested'].includes(A.status)">
+  <section class="card space-y-4">
+    <h2 class="text-lg font-extrabold">Your decision</h2>
+
+    <div><span class="lbl">Checklist (optional, helps you decide)</span>
+      <template x-for="(c, i) in rv.checklist" :key="i"><div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-0"><span class="flex-1 text-sm" x-text="c.t"></span>
+        <button class="w-11 h-11 rounded-lg border-2" :class="c.v===true ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200'" @click="c.v = c.v===true ? null : true" :aria-label="'Yes: ' + c.t"><i class="fa-solid fa-check"></i></button>
+        <button class="w-11 h-11 rounded-lg border-2" :class="c.v===false ? 'bg-red-600 border-red-600 text-white' : 'border-slate-200'" @click="c.v = c.v===false ? null : false" :aria-label="'No: ' + c.t"><i class="fa-solid fa-xmark"></i></button></div></template>
+    </div>
+
+    <div><label class="lbl" for="rv_skill">Exact skill being endorsed</label><select id="rv_skill" class="inp" x-model="rv.skillId"><option value="">Choose...</option><template x-for="s in SKILLS.filter(s => s.trade === wk(A.workerId).trade)" :key="s.id"><option :value="s.id" x-text="s.name"></option></template></select><p class="err" x-show="errs.skillId" x-text="errs.skillId"></p></div>
+    <div><span class="lbl">How did you assess it?</span><div class="grid grid-cols-2 gap-2"><button class="pick justify-center" :class="rv.level==='reviewed' && 'pick-on'" @click="rv.level='reviewed'">Watched the video</button><button class="pick justify-center" :class="rv.level==='practical' && 'pick-on'" @click="rv.level='practical'">Tested in person</button></div></div>
+    <div><label class="lbl" for="rv_date">Assessment date</label><input id="rv_date" type="date" class="inp" :max="todayMax()" x-model="rv.date"><p class="err" x-show="errs.date" x-text="errs.date"></p></div>
+    <div><label class="lbl" for="rv_c">Written comment</label><textarea id="rv_c" rows="3" class="inp" placeholder="What was good, what to improve" x-model="rv.comment"></textarea><p class="err" x-show="errs.comment" x-text="errs.comment"></p></div>
+
+    <div class="space-y-2">
+      <span class="lbl">Voice endorsement (recorded now with the microphone)</span>
+      <div class="flex items-center gap-3"><button class="w-14 h-14 rounded-full text-white text-xl flex items-center justify-center shrink-0" :class="recState.on && recState.target==='rv' ? 'bg-red-600 rec-pulse' : 'bg-slate-900'" @click="recState.on ? recStop() : recStart('rv')" :aria-label="recState.on ? 'Stop recording' : 'Record voice note'"><i class="fa-solid" :class="recState.on && recState.target==='rv' ? 'fa-stop' : 'fa-microphone'"></i></button>
+        <span class="text-sm font-mono" x-text="recState.on && recState.target==='rv' ? 'Recording ' + mmss(recState.secs) : (rv.audio ? 'Recorded ' + mmss(rv.audio.dur) : 'Tap to record (up to 30 s)')"></span></div>
+      <p class="note note-bad text-sm" x-show="recState.err && recState.target==='rv' || (recState.err && !rv.audio)" x-text="recState.err"></p>
+      <div x-show="rv.audio" class="space-y-2"><audio controls class="w-full" :src="rv.audio && rv.audio.url"></audio><button class="btn btn-ghost btn-sm text-red-700" @click="recDelete('rv')"><i class="fa-solid fa-trash"></i> Delete and record again</button></div>
+    </div>
+
+    <div class="space-y-2">
+      <button class="btn btn-green btn-lg" @click="finishReview('approve')" :disabled="recState.on"><i class="fa-solid fa-stamp"></i> Approve skill</button>
+      <button class="btn btn-ghost btn-lg" @click="finishReview('reassess')" :disabled="recState.on"><i class="fa-solid fa-rotate"></i> Request practical reassessment</button>
+      <button class="btn btn-ghost btn-lg text-red-700" @click="finishReview('reject')" :disabled="recState.on"><i class="fa-solid fa-ban"></i> Reject skill</button>
+    </div>
+  </section>
+</template>
+<template x-if="!['submitted','reassessment_requested'].includes(A.status)">
+  <section class="note" :class="A.status==='approved' ? 'note-ok' : 'note-bad'"><b x-text="asmStatusLabel(A)"></b> <span x-text="A.review ? '/ ' + A.review.comment : ''"></span></section>
+</template>

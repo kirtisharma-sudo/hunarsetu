@@ -1,0 +1,42 @@
+<button class="text-sm font-bold text-slate-600" @click="back()"><i class="fa-solid fa-arrow-left"></i> <span x-text="tr('Back')"></span></button>
+<section class="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 space-y-3">
+  <div class="flex items-center gap-3"><div class="w-14 h-14 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-xl font-black overflow-hidden"><img x-show="W.avatar" :src="W.avatar" alt="" class="w-full h-full object-cover"><span x-show="!W.avatar" x-text="initials(W.name)"></span></div>
+    <div class="flex-1 min-w-0"><h1 class="text-xl font-extrabold" x-text="W.name"></h1><p class="text-sm text-slate-300" x-text="W.trade + ' / ' + W.location"></p><p class="text-xs text-slate-400" x-text="W.experienceYears + ' years (self-declared)'"></p></div>
+    <div class="w-20 h-20 bg-white rounded-lg p-1 qrbox shrink-0" x-html="qrFor(W)" role="img" aria-label="QR code"></div></div>
+  <div class="flex flex-wrap gap-1.5"><span class="chip" :class="availCls(W)" x-text="availLabel(W)"></span><span class="chip bg-slate-700 text-slate-200" x-text="'Radius ' + W.radiusKm + ' km'"></span><span class="chip bg-slate-700 text-slate-200" x-text="W.languages.join(', ')"></span><span class="chip bg-slate-700 text-amber-200" x-show="W.isDemo">Sample</span></div>
+</section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">Skills and verification</h2>
+  <template x-for="s in W.skills" :key="s"><div class="flex items-center justify-between gap-2 py-1"><span class="font-bold" x-text="skName(s)"></span><span class="chip" :class="levelChip(skillLevel(W.id, s).level).cls"><i class="fa-solid" :class="levelChip(skillLevel(W.id, s).level).icon"></i><span x-text="levelChip(skillLevel(W.id, s).level).en"></span></span></div></template>
+  <div class="note note-info text-xs">"Self-declared" means the worker says so but no one has checked. "Ustad reviewed" and "Practically assessed" mean a master technician checked the skill.</div>
+</section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">Endorsements</h2>
+  <p class="text-sm text-slate-500" x-show="!endorsementsOf(W.id).length">None yet.</p>
+  <template x-for="e in endorsementsOf(W.id)" :key="e.id"><div class="card-flat space-y-1"><b x-text="skName(e.skillId)"></b><div class="text-sm text-slate-600">By <b x-text="ust(e.ustadId).name"></b> (<span x-text="ust(e.ustadId).experienceYears + ' yrs'"></span>), <span x-text="fdate(e.date)"></span> <span class="chip bg-slate-100 text-slate-500" x-show="e.sample">Sample</span></div><p class="text-sm italic" x-show="e.comment" x-text="'“' + e.comment + '”'"></p><audio controls class="w-full" x-show="e.audioId && media(e.audioId)" :src="media(e.audioId)"></audio></div></template>
+</section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">Work history (confirmed by both sides)</h2>
+  <p class="text-sm text-slate-500" x-show="!completedOf(W.id).length">No verified jobs yet.</p>
+  <template x-for="r in completedOf(W.id)" :key="r.id"><div class="card-flat"><div class="flex justify-between gap-2"><b x-text="r.title"></b><span class="text-amber-500 text-xs whitespace-nowrap"><template x-for="n in 5" :key="n"><i class="fa-solid fa-star" :class="n <= r.rating ? '' : 'text-slate-300'"></i></template></span></div><div class="text-sm text-slate-600" x-text="con(r.contractorId).name + ' / ' + fdate(r.endDate)"></div><p class="text-sm italic" x-show="r.feedback" x-text="'“' + r.feedback + '”'"></p></div></template>
+</section>
+
+<section class="card space-y-2" x-show="canSeePhone(W)">
+  <h2 class="h-sec">Contact</h2>
+  <a class="btn btn-green btn-lg" :href="waLink('Namaste ' + W.name + ', I found you on HunarSetu.', W.phone)" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp text-xl"></i> WhatsApp <span x-text="W.name"></span></a>
+</section>
+<p class="note note-info text-xs" x-show="!canSeePhone(W)">The worker's phone number stays private until they apply to or accept one of your jobs.</p>
+
+<!-- Invite -->
+<section class="card space-y-3">
+  <h2 class="h-sec">Invite for a job</h2>
+  <p class="text-sm text-slate-500" x-show="!myJobs().filter(j => j.status==='open').length">You have no open jobs. Post one first.</p>
+  <template x-if="myJobs().filter(j => j.status==='open').length">
+    <div class="space-y-2"><label class="lbl" for="iv_j">Choose a job</label>
+      <select id="iv_j" class="inp" x-model="inviteJobId"><option value="">Choose...</option><template x-for="j in myJobs().filter(j => j.status==='open')" :key="j.id"><option :value="j.id" x-text="j.title"></option></template></select>
+      <button class="btn btn-dark btn-lg" @click="invite(W.id, inviteJobId)"><i class="fa-solid fa-envelope"></i> Send invitation</button></div>
+  </template>
+</section>

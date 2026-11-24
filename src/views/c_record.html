@@ -1,0 +1,14 @@
+<button class="text-sm font-bold text-slate-600" @click="back()"><i class="fa-solid fa-arrow-left"></i> <span x-text="tr('Back')"></span></button>
+{{>p_record}}
+
+<section class="card space-y-3" x-show="R.status==='evidence_submitted'">
+  <h3 class="font-extrabold">Check the work and respond</h3>
+  <div><span class="lbl">Rating</span><div class="flex gap-1"><template x-for="n in 5" :key="n"><button class="w-12 h-12 text-2xl" @click="cf.rating = n" :class="n <= cf.rating ? 'text-amber-500' : 'text-slate-300'" :aria-label="n + ' star'"><i class="fa-solid fa-star"></i></button></template></div><p class="err" x-show="errs.rating" x-text="errs.rating"></p></div>
+  <div><label class="lbl" for="cf_f">Feedback (optional)</label><textarea id="cf_f" rows="2" class="inp" x-model="cf.feedback"></textarea></div>
+  <button class="btn btn-green btn-lg" @click="contractorConfirm(R.id)"><i class="fa-solid fa-circle-check"></i> Confirm completed work</button>
+  <div class="border-t border-slate-200 pt-3 space-y-2"><label class="lbl" for="cf_c">Or ask for a correction</label><textarea id="cf_c" rows="2" class="inp" placeholder="What needs to be fixed?" x-model="cf.correction"></textarea><p class="err" x-show="errs.correction" x-text="errs.correction"></p>
+    <button class="btn btn-ghost btn-lg" @click="requestCorrection(R.id)"><i class="fa-solid fa-rotate"></i> Request correction</button></div>
+</section>
+<section class="note note-info" x-show="R.status==='contractor_confirmed'">You confirmed this work. Waiting for the worker to confirm the record.</section>
+<section class="note note-info" x-show="['assigned','in_progress'].includes(R.status)">The worker is still doing the work. You will be told when they send proof.</section>
+<button class="btn btn-ghost btn-lg" @click="payReset(); go('c_paydetail', {id: R.id})" x-show="payOf(R.id)"><i class="fa-solid fa-indian-rupee-sign"></i> Payment record</button>

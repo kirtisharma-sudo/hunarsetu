@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="HunarSetu: voice-first skill identity, work history and livelihood network for India's informal workers.">
+<title>HunarSetu - Your Skills. Your Reputation. Your Livelihood.</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fbbf24'/%3E%3Cpath d='M5 21h22M8 21v-5a8 8 0 0116 0v5' stroke='%230f172a' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>{{CSS}}</style>
+<script>{{LIBS}}</script>
+<script>{{APPJS}}</script>
+<script>{{ALPINE}}</script>
+</head>
+<body x-data="app()" x-cloak>
+
+<div class="app-shell mx-auto max-w-md min-h-screen bg-slate-100 shadow-2xl relative flex flex-col">
+
+{{>shell}}
+
+<!-- ============ PUBLIC VERIFICATION PAGE (no login) ============ -->
+{{>public}}
+
+<main class="app-main flex-1 px-3.5 pt-4 pb-28 space-y-4" x-show="!pub" id="main" tabindex="-1">
+
+  <!-- Worker views -->
+  <template x-if="role==='worker' && view==='w_home'"><div class="space-y-4">{{>w_home}}</div></template>
+  <template x-if="role==='worker' && view==='w_jobs'"><div class="space-y-4">{{>w_jobs}}</div></template>
+  <template x-if="role==='worker' && view==='w_job'"><div class="space-y-4" x-data="{ J: jb(params.id) }">{{>w_job}}</div></template>
+  <template x-if="role==='worker' && view==='w_card'"><div class="space-y-4">{{>w_card}}</div></template>
+  <template x-if="role==='worker' && view==='w_profile' && pf"><div class="space-y-4">{{>w_profile}}</div></template>
+  <template x-if="role==='worker' && view==='w_assess' && af"><div class="space-y-4">{{>w_assess}}</div></template>
+  <template x-if="role==='worker' && view==='w_khata'"><div class="space-y-4">{{>w_khata}}</div></template>
+  <template x-if="role==='worker' && view==='w_record' && rec(params.id)"><div class="space-y-4" x-data="{ R: rec(params.id) }">{{>w_record}}</div></template>
+  <template x-if="role==='worker' && view==='w_hisaab'"><div class="space-y-4">{{>w_hisaab}}</div></template>
+  <template x-if="role==='worker' && view==='w_pay' && rec(params.id)"><div class="space-y-4" x-data="{ R: rec(params.id) }">{{>w_pay}}</div></template>
+  <template x-if="role==='worker' && view==='w_help'"><div class="space-y-4">{{>w_help}}</div></template>
+
+  <!-- Ustad views -->
+  <template x-if="role==='ustad' && view==='u_dash'"><div class="space-y-4">{{>u_dash}}</div></template>
+  <template x-if="role==='ustad' && view==='u_pending'"><div class="space-y-4">{{>u_pending}}</div></template>
+  <template x-if="role==='ustad' && view==='u_review' && asm(params.id) && rv"><div class="space-y-4" x-data="{ A: asm(params.id) }">{{>u_review}}</div></template>
+  <template x-if="role==='ustad' && view==='u_verify'"><div class="space-y-4">{{>u_verify}}</div></template>
+  <template x-if="role==='ustad' && view==='u_workers'"><div class="space-y-4">{{>u_workers}}</div></template>
+  <template x-if="role==='ustad' && view==='u_worker' && wk(params.id)"><div class="space-y-4" x-data="{ W: wk(params.id) }">{{>u_worker}}</div></template>
+  <template x-if="role==='ustad' && view==='u_mentor'"><div class="space-y-4">{{>u_mentor}}</div></template>
+
+  <!-- Contractor views -->
+  <template x-if="role==='contractor' && view==='c_dash'"><div class="space-y-4">{{>c_dash}}</div></template>
+  <template x-if="role==='contractor' && view==='c_post' && jf"><div class="space-y-4">{{>c_post}}</div></template>
+  <template x-if="role==='contractor' && view==='c_find'"><div class="space-y-4">{{>c_find}}</div></template>
+  <template x-if="role==='contractor' && view==='c_worker' && wk(params.id)"><div class="space-y-4" x-data="{ W: wk(params.id) }">{{>c_worker}}</div></template>
+  <template x-if="role==='contractor' && view==='c_apps'"><div class="space-y-4">{{>c_apps}}</div></template>
+  <template x-if="role==='contractor' && view==='c_history'"><div class="space-y-4">{{>c_history}}</div></template>
+  <template x-if="role==='contractor' && view==='c_record' && rec(params.id)"><div class="space-y-4" x-data="{ R: rec(params.id) }">{{>c_record}}</div></template>
+  <template x-if="role==='contractor' && view==='c_pay'"><div class="space-y-4">{{>c_pay}}</div></template>
+  <template x-if="role==='contractor' && view==='c_paydetail' && rec(params.id)"><div class="space-y-4" x-data="{ R: rec(params.id) }">{{>c_paydetail}}</div></template>
+
+  <!-- Hunar Mitra views -->
+  <template x-if="role==='mitra' && view==='m_dash'"><div class="space-y-4">{{>m_dash}}</div></template>
+  <template x-if="role==='mitra' && view==='m_assist'"><div class="space-y-4">{{>m_assist}}</div></template>
+  <template x-if="role==='mitra' && view==='m_help'"><div class="space-y-4">{{>m_help}}</div></template>
+  <template x-if="role==='mitra' && view==='m_verify'"><div class="space-y-4">{{>m_verify}}</div></template>
+  <template x-if="role==='mitra' && view==='m_community'"><div class="space-y-4">{{>m_community}}</div></template>
+
+</main>
+
+{{>overlays}}
+
+</div>
+</body>
+</html>

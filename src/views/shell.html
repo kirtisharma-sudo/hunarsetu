@@ -1,0 +1,50 @@
+<a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-2" @click.prevent="document.getElementById('main').focus()">Skip to content</a>
+
+<header class="app-head sticky top-0 z-40 bg-slate-900 text-white shadow-lg" x-show="!pub">
+  <div class="app-brand px-3.5 pt-2.5 pb-2 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-9 h-9 shrink-0 rounded-lg bg-amber-400 flex items-center justify-center"><i class="fa-solid fa-bridge text-slate-900"></i></div>
+      <div class="leading-tight min-w-0">
+        <div class="text-lg font-extrabold tracking-tight">Hunar<span class="text-amber-400">Setu</span></div>
+        <div class="text-[10px] text-slate-400 truncate" x-text="tr('Your Skills. Your Reputation. Your Livelihood.')"></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button class="h-10 px-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-black" @click="setLang(lang==='en'?'hi':'en')" :aria-label="lang==='en'?'Switch to Hindi':'Switch to English'">
+        <span x-text="lang==='en' ? 'हिंदी' : 'English'"></span>
+      </button>
+      <button class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700" @click="drawer=true" aria-label="Demo guide and settings"><i class="fa-solid fa-sliders"></i></button>
+    </div>
+  </div>
+
+  <!-- Demo role switcher. This is NOT login. -->
+  <div class="app-roles px-3 pb-2.5">
+    <div class="flex items-center justify-between px-1 mb-1">
+      <span class="text-[10px] font-black tracking-widest uppercase text-amber-300"><i class="fa-solid fa-flask mr-1"></i>Demo: switch role (not a real login)</span>
+    </div>
+    <div class="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-800 border border-slate-700" role="tablist">
+      <template x-for="r in ['worker','ustad','contractor','mitra']" :key="r">
+        <button role="tab" :aria-selected="role===r" @click="setRole(r)" class="relative py-1.5 rounded-lg text-[11px] font-black leading-tight transition"
+          :class="role===r ? 'bg-amber-400 text-slate-900' : 'text-slate-300 hover:bg-slate-700'">
+          <i class="fa-solid block text-sm mb-0.5" :class="ROLE_INFO[r].icon"></i>
+          <span x-text="tr(ROLE_INFO[r].en)"></span>
+        </button>
+      </template>
+    </div>
+  </div>
+</header>
+
+<div x-show="!pub && saveWarn" class="note note-bad m-3" x-text="saveWarn"></div>
+
+<!-- Bottom navigation -->
+<nav class="app-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-white border-t border-slate-300 shadow-[0_-4px_14px_rgba(0,0,0,.08)]" x-show="!pub" aria-label="Main">
+  <div class="app-nav-in flex overflow-x-auto hide-scroll" :class="navItems().length<=5 ? 'justify-around' : ''">
+    <template x-for="n in navItems()" :key="n.v">
+      <button @click="tab(n.v)" class="flex-1 min-w-[64px] px-1 py-2 flex flex-col items-center gap-0.5 text-[10px] font-bold leading-tight text-center border-t-4 transition"
+        :class="activeTab()===n.v ? 'border-amber-400 text-slate-900 bg-amber-50' : 'border-transparent text-slate-500'" :aria-current="activeTab()===n.v ? 'page' : null">
+        <i class="fa-solid text-lg" :class="n.icon"></i>
+        <span x-text="tr(n.en)"></span>
+      </button>
+    </template>
+  </div>
+</nav>

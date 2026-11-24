@@ -1,0 +1,20 @@
+{
+  "name": "hunarsetu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HunarSetu: voice-first skill identity, work history and livelihood network (Build for Bharat, Track 6 prototype)",
+  "scripts": {
+    "build": "node build/build.js",
+    "test:smoke": "node tests/smoke.js",
+    "test": "node tests/journey.js"
+  },
+  "devDependencies": {
+    "@fortawesome/fontawesome-free": "6.5.2",
+    "alpinejs": "3.14.1",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "23",
+    "qrcode-generator": "1.4.4",
+    "tailwindcss": "3.4.17"
+  }
+}

@@ -1,0 +1,26 @@
+<section class="rounded-2xl bg-slate-900 text-white p-4 flex items-center gap-3">
+  <div class="w-14 h-14 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-xl font-black" x-text="initials(ustad.name)"></div>
+  <div class="flex-1"><h1 class="text-xl font-extrabold" x-text="ustad.name"></h1><p class="text-sm text-slate-300" x-text="ustad.title + ' / ' + ustad.experienceYears + ' years'"></p><span class="chip bg-slate-700 text-amber-200 mt-1" x-show="ustad.sample">Sample Ustad account (demo)</span></div>
+</section>
+<div class="note note-info text-sm">Only an Ustad can endorse a skill. Nothing is approved automatically. Anything the app shows from the video is a hint, not a decision.</div>
+
+<div class="stat-grid grid grid-cols-2 gap-3">
+  <button class="card text-left" @click="tab('u_pending')"><div class="text-3xl font-extrabold text-amber-600" x-text="ustadQueue().length"></div><div class="text-sm font-bold">Pending assessments</div></button>
+  <button class="card text-left" @click="tab('u_verify')"><div class="text-3xl font-extrabold text-emerald-600" x-text="ustadDone('approved').length"></div><div class="text-sm font-bold">Approved skills</div></button>
+  <button class="card text-left" @click="tab('u_verify')"><div class="text-3xl font-extrabold text-red-600" x-text="ustadDone('rejected').length"></div><div class="text-sm font-bold">Not approved</div></button>
+  <button class="card text-left" @click="tab('u_mentor')"><div class="text-3xl font-extrabold text-indigo-600" x-text="db.mentorships.filter(m => m.ustadId===ustad.id && m.status==='requested').length"></div><div class="text-sm font-bold">Mentorship requests</div></button>
+</div>
+
+<section class="space-y-2">
+  <h2 class="h-sec">Next to review</h2>
+  <div class="card text-center text-slate-500" x-show="!ustadQueue().length"><i class="fa-solid fa-inbox text-3xl text-slate-300"></i><p class="font-bold mt-2">Nothing waiting</p><p class="text-sm">When a worker sends a skill video, it appears here.</p></div>
+  <template x-for="a in ustadQueue().slice(0, 3)" :key="a.id">
+    <button class="w-full text-left card flex items-center gap-3 min-h-[60px]" @click="openReview(a.id)"><span class="w-10 h-10 rounded-lg bg-amber-100 text-amber-800 font-black flex items-center justify-center" x-text="initials(wk(a.workerId).name)"></span><span class="flex-1"><b x-text="wk(a.workerId).name"></b><br><span class="text-sm text-slate-600" x-text="skName(a.skillId)"></span></span><span class="chip" :class="asmStatusCls(a)" x-text="asmStatusLabel(a)"></span></button>
+  </template>
+</section>
+
+<section class="space-y-2">
+  <h2 class="h-sec">Updates</h2>
+  <p class="text-sm text-slate-500 card-flat" x-show="!eventsFor('ustad', ustad.id).length">No updates yet.</p>
+  <template x-for="e in eventsFor('ustad', ustad.id)" :key="e.id"><button class="w-full text-left card-flat text-sm" @click="e.view && go(e.view, e.params)"><i class="fa-solid fa-bell text-amber-500"></i> <span x-text="e.text"></span> <span class="text-xs text-slate-400" x-text="' / ' + timeAgo(e.at)"></span></button></template>
+</section>

@@ -1,0 +1,13 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('Mentorship')"></h1><p class="text-sm text-slate-600">Workers who want to learn from you.</p></section>
+<div class="card text-center text-slate-500" x-show="!db.mentorships.some(m => m.ustadId===ustad.id)">No mentorship requests yet.</div>
+<template x-for="m in byDate(db.mentorships.filter(m => m.ustadId===ustad.id), 'createdAt')" :key="m.id">
+  <article class="card space-y-2">
+    <div class="flex items-start justify-between gap-2"><div><b x-text="wk(m.workerId) && wk(m.workerId).name"></b><div class="text-sm text-slate-600" x-text="m.topic"></div></div><span class="chip" :class="m.status==='requested' ? 'bg-amber-100 text-amber-900' : m.status==='accepted' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'" x-text="m.status"></span></div>
+    <p class="text-sm" x-show="m.message" x-text="m.message"></p>
+    <template x-if="m.status==='requested'">
+      <div class="space-y-2"><textarea rows="2" class="inp" placeholder="Your reply to the worker" x-model="mentReply[m.id]"></textarea><p class="err" x-show="errs['mr'+m.id]" x-text="errs['mr'+m.id]"></p>
+        <div class="grid grid-cols-2 gap-2"><button class="btn btn-green btn-sm" @click="replyMentor(m.id, true)">Accept</button><button class="btn btn-ghost btn-sm" @click="replyMentor(m.id, false)">Decline</button></div></div>
+    </template>
+    <p class="text-sm" x-show="m.reply"><b>Your reply:</b> <span x-text="m.reply"></span></p>
+  </article>
+</template>

@@ -1,0 +1,63 @@
+<section>
+  <h1 class="text-xl font-extrabold" x-text="tr('Help')"></h1>
+  <p class="text-sm text-slate-600">Listen to the guides in Hindi, read the answers, or ask a person to help you.</p>
+</section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">Listen (Hindi voice)</h2>
+  <template x-for="h in HELP_AUDIO" :key="h.id">
+    <button class="w-full text-left card-flat flex items-center gap-3 min-h-[56px]" @click="speak(h.text)"><span class="w-11 h-11 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center shrink-0"><i class="fa-solid fa-volume-high"></i></span><span class="flex-1"><b lang="hi" x-text="h.hi"></b><br><span class="text-xs text-slate-500" x-text="h.title"></span></span></button>
+  </template>
+  <button class="btn btn-ghost btn-sm" @click="stopSpeak()"><i class="fa-solid fa-stop"></i> Stop voice</button>
+  <p class="text-xs text-slate-500">The voice comes from your phone. If you hear nothing, your phone may not have a Hindi voice installed. Read the answers below instead.</p>
+</section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">Questions and answers</h2>
+  <template x-for="(f, i) in FAQS" :key="i">
+    <div class="border-b border-slate-100 last:border-0">
+      <button class="w-full text-left py-3 flex items-center justify-between gap-2 min-h-[52px]" @click="openFaq = openFaq===i ? -1 : i" :aria-expanded="openFaq===i"><span><b x-text="f.q"></b><br><span class="text-sm text-slate-500" lang="hi" x-text="f.hi"></span></span><i class="fa-solid" :class="openFaq===i ? 'fa-chevron-up' : 'fa-chevron-down'"></i></button>
+      <div x-show="openFaq===i" class="pb-3 space-y-1"><p class="text-sm" x-text="f.a"></p><p class="text-sm" lang="hi" x-text="f.ah"></p><button class="btn btn-ghost btn-sm" @click="speak(f.ah)"><i class="fa-solid fa-volume-high"></i> Listen</button></div>
+    </div>
+  </template>
+</section>
+
+<template x-if="me">
+  <div class="space-y-4">
+    <section class="card space-y-3">
+      <h2 class="h-sec">Ask a Hunar Mitra for help</h2>
+      <p class="text-sm text-slate-600">A Hunar Mitra is a local helper. She can sit with you, record your voice, upload your video or help with a problem. She only sees what is needed for your request.</p>
+      <div><label class="lbl" for="rt">What do you need help with?</label><select id="rt" class="inp" x-model="reqF.type"><template x-for="t in ['registration','voice_help','video_help','job_help','payment_help','assessment_appointment','other']" :key="t"><option :value="t" x-text="reqTypeLabel(t)"></option></template></select></div>
+      <div><label class="lbl" for="rm">Tell us in a few words</label><textarea id="rm" rows="3" class="inp" x-model="reqF.message"></textarea><p class="err" x-show="errs.message" x-text="errs.message"></p></div>
+      <button class="btn btn-green btn-lg" @click="sendHelp()"><i class="fa-solid fa-paper-plane"></i> Send request</button>
+    </section>
+
+    <section class="card space-y-2">
+      <h2 class="h-sec">My help requests</h2>
+      <p class="text-sm text-slate-500" x-show="!db.support_requests.filter(s => s.workerId===me.id).length">No requests yet.</p>
+      <template x-for="s in byDate(db.support_requests.filter(s => s.workerId===me.id), 'createdAt')" :key="s.id">
+        <div class="card-flat space-y-1">
+          <div class="flex items-center justify-between gap-2"><b x-text="reqTypeLabel(s.type)"></b><span class="chip" :class="s.status==='resolved' ? 'bg-emerald-100 text-emerald-800' : s.status==='assigned' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-900'" x-text="reqStatusLabel(s.status)"></span></div>
+          <p class="text-sm text-slate-600" x-text="s.message"></p>
+          <p class="text-xs text-slate-500" x-show="s.date"><i class="fa-solid fa-calendar-day"></i> <span x-text="fdate(s.date) + ' / ' + s.place"></span></p>
+        </div>
+      </template>
+    </section>
+
+    <section class="card space-y-3">
+      <h2 class="h-sec">Mentorship from an Ustad</h2>
+      <p class="text-sm text-slate-600">Want to learn a new skill? Ask an Ustad.</p>
+      <div><label class="lbl" for="mt1">Ustad</label><select id="mt1" class="inp" x-model="mentUstad"><template x-for="u in db.ustads" :key="u.id"><option :value="u.id" x-text="u.name + ' (' + u.title + ')'"></option></template></select></div>
+      <div><label class="lbl" for="mt2">What do you want to learn?</label><input id="mt2" class="inp" x-model="mentF.topic"><p class="err" x-show="errs.topic" x-text="errs.topic"></p></div>
+      <button class="btn btn-dark btn-lg" @click="requestMentor(mentUstad || db.ustads[0].id)"><i class="fa-solid fa-handshake-angle"></i> Ask for mentorship</button>
+      <template x-for="m in db.mentorships.filter(m => m.workerId===me.id)" :key="m.id">
+        <div class="card-flat"><div class="flex items-center justify-between gap-2"><b x-text="m.topic"></b><span class="chip bg-slate-100 text-slate-700" x-text="m.status"></span></div><p class="text-sm text-slate-600" x-show="m.reply" x-text="ust(m.ustadId).name + ': ' + m.reply"></p></div>
+      </template>
+    </section>
+  </div>
+</template>
+
+<section class="card space-y-1">
+  <h2 class="h-sec">Contact support</h2>
+  <p class="text-sm">This is a prototype. Support contact details will be published when the pilot starts in Delhi-NCR.</p>
+</section>

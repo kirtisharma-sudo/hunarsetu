@@ -1,0 +1,36 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('Find Workers')"></h1>
+  <p class="text-sm text-slate-600">Ordinary filters. Workers are ranked by a points score you can see for each person. There is no hidden AI.</p></section>
+
+<section class="card space-y-3">
+  <div><label class="lbl" for="ff_job">Match to one of my jobs (optional)</label><select id="ff_job" class="inp" @change="$event.target.value ? findFromJob($event.target.value) : resetFind()" :value="findF.jobId"><option value="">No, use my own filters</option><template x-for="j in myJobs()" :key="j.id"><option :value="j.id" x-text="j.title"></option></template></select></div>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="lbl" for="ff_t">Trade</label><select id="ff_t" class="inp" x-model="findF.trade" @change="findF.skill=''"><option value="">All</option><template x-for="t in TRADES" :key="t"><option :value="t" x-text="t"></option></template></select></div>
+    <div><label class="lbl" for="ff_s">Skill</label><select id="ff_s" class="inp" x-model="findF.skill"><option value="">Any</option><template x-for="s in (findF.trade ? skillsOfTrade(findF.trade) : SKILLS)" :key="s.id"><option :value="s.id" x-text="s.name"></option></template></select></div>
+    <div><label class="lbl" for="ff_l">Location</label><input id="ff_l" class="inp" list="localities" placeholder="Any" x-model="findF.location"></div>
+    <div><label class="lbl" for="ff_r">Within</label><select id="ff_r" class="inp" x-model="findF.radius"><option value="5">5 km</option><option value="10">10 km</option><option value="15">15 km</option><option value="25">25 km</option><option value="50">50 km</option></select></div>
+    <div><label class="lbl" for="ff_e">Min experience</label><select id="ff_e" class="inp" x-model="findF.minExp"><option value="">Any</option><option value="2">2+ years</option><option value="5">5+ years</option><option value="8">8+ years</option><option value="15">15+ years</option></select></div>
+    <div><label class="lbl" for="ff_a">Availability</label><select id="ff_a" class="inp" x-model="findF.availability"><option value="">Any</option><option value="available">Available now</option></select></div>
+  </div>
+  <div><span class="lbl">Verification</span><div class="grid grid-cols-2 gap-2"><button class="pick justify-center" :class="findF.verified==='' && 'pick-on'" @click="findF.verified=''">All workers</button><button class="pick justify-center" :class="findF.verified==='yes' && 'pick-on'" @click="findF.verified='yes'">Ustad endorsed only</button></div></div>
+  <button class="btn btn-ghost btn-sm" @click="resetFind()"><i class="fa-solid fa-rotate-left"></i> Clear filters</button>
+</section>
+
+<section class="space-y-3">
+  <p class="text-sm font-bold" x-text="rankWorkers().length + (rankWorkers().length===1 ? ' worker found' : ' workers found')"></p>
+  <div class="card text-center text-slate-500" x-show="!rankWorkers().length"><i class="fa-solid fa-user-slash text-3xl text-slate-300"></i><p class="font-bold mt-2">No workers match these filters</p><p class="text-sm">Try a bigger distance or fewer filters.</p></div>
+  <template x-for="r in rankWorkers()" :key="r.w.id">
+    <article class="card space-y-2">
+      <div class="flex items-start gap-3">
+        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 font-black flex items-center justify-center overflow-hidden shrink-0"><img x-show="r.w.avatar" :src="r.w.avatar" alt="" class="w-full h-full object-cover"><span x-show="!r.w.avatar" x-text="initials(r.w.name)"></span></div>
+        <div class="flex-1 min-w-0"><b class="text-base" x-text="r.w.name"></b><div class="text-sm text-slate-600" x-text="r.w.trade + ' / ' + r.w.location + ' / ' + r.w.experienceYears + ' yrs'"></div>
+          <div class="flex flex-wrap gap-1 mt-1"><span class="chip" :class="availCls(r.w)" x-text="availLabel(r.w)"></span><span class="chip bg-amber-100 text-amber-900" x-show="isVerified(r.w)"><i class="fa-solid fa-circle-check"></i> Ustad endorsed</span><span class="chip bg-slate-100 text-slate-500" x-show="r.w.isDemo">Sample</span></div></div>
+        <div class="text-center shrink-0"><div class="text-xl font-extrabold text-slate-900" x-text="r.score"></div><div class="text-[10px] text-slate-500">points</div></div>
+      </div>
+      <div class="flex flex-wrap gap-1"><template x-for="s in r.w.skills" :key="s"><span class="chip" :class="levelChip(skillLevel(r.w.id, s).level).cls" x-text="skName(s)"></span></template></div>
+      <div class="text-xs text-slate-500">Confirmed jobs: <b x-text="r.jobsDone"></b> / Rating: <b x-text="r.rating || '-'"></b><span x-show="r.dist !== null"> / <b x-text="r.dist + ' km away'"></b></span></div>
+      <details class="text-xs"><summary class="font-bold text-slate-600 cursor-pointer min-h-[32px] flex items-center">Why this score</summary><ul class="mt-1 space-y-0.5"><template x-for="x in r.why" :key="x[0]"><li class="flex justify-between"><span x-text="x[0]"></span><b x-text="'+' + x[1]"></b></li></template><li class="text-slate-500" x-show="!r.why.length">No scoring criteria apply. Choose a trade or location to rank.</li></ul></details>
+      <div class="grid grid-cols-2 gap-2"><button class="btn btn-ghost btn-sm" @click="go('c_worker', {id: r.w.id})">View profile</button>
+        <button class="btn btn-dark btn-sm" @click="go('c_worker', {id: r.w.id, invite: true})"><i class="fa-solid fa-envelope"></i> Invite</button></div>
+    </article>
+  </template>
+</section>

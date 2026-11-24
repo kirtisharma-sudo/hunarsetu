@@ -1,0 +1,5 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('My Workers')"></h1><p class="text-sm text-slate-600">Workers you have reviewed, endorsed or mentor.</p></section>
+<div class="card text-center text-slate-500" x-show="!ustadWorkerIds().length">No workers yet.</div>
+<template x-for="id in ustadWorkerIds()" :key="id">
+  <button class="w-full text-left card flex items-center gap-3 min-h-[60px]" @click="go('u_worker', {id})" x-show="wk(id)"><span class="w-11 h-11 rounded-lg bg-amber-100 text-amber-800 font-black flex items-center justify-center" x-text="initials(wk(id).name)"></span><span class="flex-1 min-w-0"><b x-text="wk(id).name"></b><br><span class="text-sm text-slate-600" x-text="wk(id).trade + ' / ' + wk(id).location"></span></span><span class="chip" :class="isVerified(wk(id)) ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'" x-text="isVerified(wk(id)) ? 'Endorsed' : 'Not endorsed'"></span></button>
+</template>

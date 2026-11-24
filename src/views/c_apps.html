@@ -1,0 +1,22 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('Applications')"></h1><p class="text-sm text-slate-600">Workers who applied, or accepted your invitation. Status updates show on the worker's side straight away.</p></section>
+<div class="flex gap-2 overflow-x-auto hide-scroll pb-1">
+  <template x-for="f in [['all','All'],['applied','New'],['shortlisted','Shortlisted'],['accepted','Accepted'],['invited','Invited'],['assigned','Assigned'],['rejected','Rejected']]" :key="f[0]"><button class="pick whitespace-nowrap" :class="appFilter===f[0] && 'pick-on'" @click="appFilter=f[0]" x-text="f[1] + ' (' + appsForContractor(f[0]).length + ')'"></button></template>
+</div>
+<div class="card text-center text-slate-500" x-show="!appsForContractor(appFilter).length"><i class="fa-solid fa-inbox text-3xl text-slate-300"></i><p class="font-bold mt-2">Nothing here</p></div>
+<template x-for="a in appsForContractor(appFilter)" :key="a.id">
+  <article class="card space-y-2">
+    <div class="flex items-start gap-3"><div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-800 font-black flex items-center justify-center shrink-0" x-text="initials(wk(a.workerId).name)"></div>
+      <div class="flex-1 min-w-0"><b x-text="wk(a.workerId).name"></b><div class="text-sm text-slate-600" x-text="wk(a.workerId).trade + ' / ' + wk(a.workerId).experienceYears + ' yrs / ' + wk(a.workerId).location"></div><div class="text-xs text-slate-500" x-text="'For: ' + jb(a.jobId).title"></div></div>
+      <span class="chip shrink-0" :class="appCls(a)" x-text="a.status==='invited' ? 'Invited' : appLabel(a)"></span></div>
+    <div class="flex flex-wrap gap-1"><span class="chip bg-amber-100 text-amber-900" x-show="isVerified(wk(a.workerId))"><i class="fa-solid fa-circle-check"></i> Ustad endorsed</span><span class="chip bg-slate-100 text-slate-700" x-text="completedOf(a.workerId).length + ' confirmed jobs'"></span><span class="chip bg-slate-100 text-slate-500" x-text="a.origin==='contractor' ? 'You invited' : 'Applied ' + timeAgo(a.createdAt)"></span></div>
+    <div class="grid grid-cols-2 gap-2">
+      <button class="btn btn-ghost btn-sm" @click="go('c_worker', {id: a.workerId})">View Hunar Card</button>
+      <button class="btn btn-ghost btn-sm" x-show="a.status==='applied'" @click="setApp(a.id, 'shortlisted')">Shortlist</button>
+      <button class="btn btn-green btn-sm" x-show="a.status==='applied' || a.status==='shortlisted'" @click="setApp(a.id, 'accepted')">Accept</button>
+      <button class="btn btn-primary btn-sm" x-show="['accepted','shortlisted','applied'].includes(a.status)" @click="assignWorker(a.id)"><i class="fa-solid fa-user-check"></i> Assign job</button>
+      <button class="btn btn-ghost btn-sm text-red-700" x-show="['applied','shortlisted','accepted'].includes(a.status)" @click="setApp(a.id, 'rejected')">Reject</button>
+      <button class="btn btn-ghost btn-sm" x-show="a.status==='assigned'" @click="tab('c_history')">Open work record</button>
+    </div>
+    <div class="text-sm" x-show="canSeePhone(wk(a.workerId)) && a.status!=='rejected'"><a class="font-bold text-emerald-700" :href="waLink('Namaste ' + wk(a.workerId).name + ', about ' + jb(a.jobId).title, wk(a.workerId).phone)" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Message on WhatsApp</a></div>
+  </article>
+</template>

@@ -1,0 +1,52 @@
+<!-- Shared skill test form (worker, or Hunar Mitra on behalf of a consenting worker) -->
+<section class="card space-y-4 form-narrow">
+  <div>
+    <h2 class="text-xl font-extrabold text-slate-900">Show your skill</h2>
+    <p class="text-sm text-slate-600">Make a short video (15 to 30 seconds) of you doing one job. An Ustad will watch it.</p>
+  </div>
+
+  <div>
+    <span class="lbl">1. Trade</span>
+    <div class="flex flex-wrap gap-2"><template x-for="t in TRADES" :key="t"><button type="button" class="pick" :class="af.trade===t && 'pick-on'" @click="afSetTrade(t)"><i class="fa-solid" :class="TRADE_ICON[t]"></i><span x-text="t"></span></button></template></div>
+  </div>
+  <div>
+    <span class="lbl">2. Which skill will you show?</span>
+    <div class="space-y-2">
+      <template x-for="s in afSkills()" :key="s.id">
+        <button type="button" class="w-full text-left rounded-xl border-2 p-3 min-h-[56px]" :class="af.skillId===s.id ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white'" @click="af.skillId=s.id">
+          <div class="flex items-center justify-between gap-2"><b x-text="s.name"></b><span class="text-sm text-slate-500" lang="hi" x-text="s.hi"></span></div>
+          <p class="text-sm text-slate-600 mt-1" x-show="af.skillId===s.id" x-text="s.task"></p>
+        </button>
+      </template>
+    </div>
+    <p class="err" x-show="errs.skill" x-text="errs.skill"></p>
+  </div>
+
+  <div>
+    <span class="lbl">3. Your video</span>
+    <div x-show="!af.blob" class="grid grid-cols-2 gap-2">
+      <label class="btn btn-dark cursor-pointer"><i class="fa-solid fa-video"></i> Record<input type="file" accept="video/*" capture="environment" class="hidden" @change="afPick($event)"></label>
+      <label class="btn btn-ghost cursor-pointer"><i class="fa-solid fa-upload"></i> Choose file<input type="file" accept="video/*" class="hidden" @change="afPick($event)"></label>
+    </div>
+    <p class="err" x-show="errs.video" x-text="errs.video"></p>
+    <p class="note note-bad mt-2" x-show="af.err" x-text="af.err"></p>
+    <div x-show="af.blob" class="space-y-2">
+      <video controls playsinline preload="metadata" class="w-full rounded-xl bg-black max-h-72" :src="af.url"></video>
+      <div class="flex items-center justify-between text-xs text-slate-500"><span class="truncate" x-text="af.fileName"></span><button class="font-bold text-red-700" @click="afClearVideo()"><i class="fa-solid fa-trash"></i> Remove</button></div>
+    </div>
+    <ul class="text-xs text-slate-500 mt-2 list-disc pl-5 space-y-0.5"><li>Switch off the supply or water first.</li><li>Keep your hands and tools clearly in the picture.</li><li>Hold the phone steady, in good light.</li></ul>
+  </div>
+
+  <div x-show="af.blob" class="space-y-2">
+    <h3 class="h-sec">Basic video checks (done on this phone)</h3>
+    <p class="text-sm text-slate-500" x-show="af.analyzing"><i class="fa-solid fa-circle-notch fa-spin"></i> Reading the video...</p>
+    <template x-for="c in (af.checks || [])" :key="c.label">
+      <div class="flex items-start gap-2 text-sm"><i class="fa-solid mt-1" :class="c.status==='ok' ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-amber-500'"></i><span><b x-text="c.label"></b>: <span class="text-slate-600" x-text="c.detail"></span></span></div>
+    </template>
+    <div class="note note-info text-xs"><b>What these checks are not.</b> They measure length, picture size, light and camera movement. They do not judge whether your work is correct or safe. Only an Ustad can do that.</div>
+  </div>
+
+  <button class="btn btn-green btn-lg" @click="afSubmit(role==='mitra' ? mitra.id : null)" :disabled="af.submitting || af.analyzing">
+    <i class="fa-solid" :class="af.submitting ? 'fa-circle-notch fa-spin' : 'fa-paper-plane'"></i> Send to Ustad
+  </button>
+</section>

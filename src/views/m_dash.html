@@ -1,0 +1,15 @@
+<section class="rounded-2xl bg-slate-900 text-white p-4 flex items-center gap-3">
+  <div class="w-14 h-14 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-xl font-black" x-text="initials(mitra.name)"></div>
+  <div class="flex-1"><h1 class="text-xl font-extrabold" x-text="mitra.name"></h1><p class="text-sm text-slate-300">Hunar Mitra / <span x-text="mitra.location"></span></p><span class="chip bg-slate-700 text-amber-200 mt-1" x-show="mitra.isDemo">Sample account (demo)</span></div>
+</section>
+<div class="note note-info text-sm">A Hunar Mitra helps workers who cannot use the app alone. You can act only for workers who agreed to be registered through you. You are not an administrator and cannot see private worker data.</div>
+<div class="grid grid-cols-2 gap-3">
+  <button class="card text-left" @click="tab('m_help')"><div class="text-3xl font-extrabold text-amber-600" x-text="openRequests().length"></div><div class="text-sm font-bold">Open help requests</div></button>
+  <button class="card text-left" @click="tab('m_help')"><div class="text-3xl font-extrabold text-indigo-600" x-text="myRequests().length"></div><div class="text-sm font-bold">I am helping</div></button>
+  <button class="card text-left" @click="tab('m_verify')"><div class="text-3xl font-extrabold text-emerald-600" x-text="mitraWorkers().length"></div><div class="text-sm font-bold">Workers I registered</div></button>
+  <button class="card text-left" @click="tab('m_community')"><div class="text-3xl font-extrabold text-slate-700" x-text="nearbyWorkers().length"></div><div class="text-sm font-bold">Workers near me</div></button>
+</div>
+<button class="btn btn-primary btn-lg" @click="onbReset(); tab('m_assist')"><i class="fa-solid fa-user-plus"></i> Register a worker with their consent</button>
+<section class="space-y-2"><h2 class="h-sec">Updates</h2>
+  <p class="text-sm text-slate-500 card-flat" x-show="!eventsFor('mitra', mitra.id).length">No updates yet.</p>
+  <template x-for="e in eventsFor('mitra', mitra.id)" :key="e.id"><div class="card-flat text-sm" x-text="e.text"></div></template></section>

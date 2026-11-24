@@ -1,0 +1,23 @@
+<section class="card space-y-4 form-narrow">
+  <h1 class="text-xl font-extrabold" x-text="jf.id ? 'Edit job' : tr('Post a Job')"></h1>
+  <div><label class="lbl" for="j_title">Job title</label><input id="j_title" class="inp" placeholder="Example: Electrician needed for new flat" x-model="jf.title"><p class="err" x-show="errs.title" x-text="errs.title"></p></div>
+  <div><span class="lbl">Trade</span><div class="flex flex-wrap gap-2"><template x-for="t in TRADES" :key="t"><button type="button" class="pick" :class="jf.trade===t && 'pick-on'" @click="jfTrade(t)"><i class="fa-solid" :class="TRADE_ICON[t]"></i><span x-text="t"></span></button></template></div></div>
+  <div><span class="lbl">Skills required</span><div class="flex flex-wrap gap-2"><template x-for="s in skillsOfTrade(jf.trade)" :key="s.id"><button type="button" class="pick" :class="jf.skills.includes(s.id) && 'pick-on'" @click="toggleIn(jf.skills, s.id)"><i class="fa-solid" :class="jf.skills.includes(s.id) ? 'fa-square-check' : 'fa-square'"></i><span x-text="s.name"></span></button></template></div><p class="err" x-show="errs.skills" x-text="errs.skills"></p></div>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="lbl" for="j_n">Workers needed</label><input id="j_n" class="inp" type="number" min="1" max="50" x-model="jf.workersNeeded"><p class="err" x-show="errs.workersNeeded" x-text="errs.workersNeeded"></p></div>
+    <div><label class="lbl" for="j_loc">Location</label><input id="j_loc" class="inp" list="localities" x-model="jf.location"><p class="err" x-show="errs.location" x-text="errs.location"></p></div>
+  </div>
+  <div><span class="lbl">Payment type</span><div class="grid grid-cols-2 gap-2"><button class="pick justify-center" :class="jf.payType==='daily' && 'pick-on'" @click="jf.payType='daily'">Daily wage</button><button class="pick justify-center" :class="jf.payType==='fixed' && 'pick-on'" @click="jf.payType='fixed'">Fixed project</button></div></div>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="lbl" for="j_amt" x-text="jf.payType==='daily' ? 'Wage per day (Rs.)' : 'Total payment (Rs.)'"></label><input id="j_amt" class="inp" type="number" min="1" inputmode="numeric" x-model="jf.amount"><p class="err" x-show="errs.amount" x-text="errs.amount"></p></div>
+    <div><label class="lbl" for="j_dur">Duration (days)</label><input id="j_dur" class="inp" type="number" min="1" max="365" x-model="jf.durationDays"><p class="err" x-show="errs.durationDays" x-text="errs.durationDays"></p></div>
+  </div>
+  <p class="text-sm text-slate-600" x-show="jf.payType==='daily' && Number(jf.amount) > 0 && Number(jf.durationDays) > 0">Total for one worker: <b x-text="inr(Number(jf.amount) * Number(jf.durationDays))"></b></p>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="lbl" for="j_exp">Minimum experience (years)</label><input id="j_exp" class="inp" type="number" min="0" max="50" x-model="jf.minExperience"><p class="err" x-show="errs.minExperience" x-text="errs.minExperience"></p></div>
+    <div><label class="lbl" for="j_sd">Start date</label><input id="j_sd" class="inp" type="date" x-model="jf.startDate"><p class="err" x-show="errs.startDate" x-text="errs.startDate"></p></div>
+  </div>
+  <label class="flex items-start gap-3 cursor-pointer"><input type="checkbox" class="mt-1 w-6 h-6 shrink-0" x-model="jf.requireVerified"><span class="text-sm">Only workers with an Ustad endorsement can apply.</span></label>
+  <div><label class="lbl" for="j_d">Work description</label><textarea id="j_d" rows="4" class="inp" x-model="jf.description"></textarea><p class="err" x-show="errs.description" x-text="errs.description"></p></div>
+  <div class="grid grid-cols-3 gap-2"><button class="btn btn-ghost" @click="jfInit(null); stack.length ? back() : tab('c_dash')">Cancel</button><button class="btn btn-green col-span-2" @click="saveJob()"><i class="fa-solid fa-check"></i> <span x-text="jf.id ? 'Save changes' : 'Post job'"></span></button></div>
+</section>

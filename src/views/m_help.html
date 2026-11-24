@@ -1,0 +1,40 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('Help Workers')"></h1><p class="text-sm text-slate-600">Requests from workers. You see only the worker's name, trade, area and what they asked.</p></section>
+
+<section class="space-y-2">
+  <h2 class="h-sec">Open requests</h2>
+  <div class="card text-center text-slate-500" x-show="!openRequests().length">No open requests.</div>
+  <template x-for="s in openRequests()" :key="s.id">
+    <article class="card space-y-2">
+      <div class="flex items-start justify-between gap-2"><div><b x-text="wk(s.workerId) ? wk(s.workerId).name : 'Worker'"></b><div class="text-sm text-slate-600" x-text="wk(s.workerId) ? wk(s.workerId).trade + ' / ' + wk(s.workerId).location : ''"></div></div><span class="chip bg-amber-100 text-amber-900" x-text="reqTypeLabel(s.type)"></span></div>
+      <p class="text-sm" x-text="s.message"></p><p class="text-xs text-slate-400" x-text="timeAgo(s.createdAt)"></p>
+      <button class="btn btn-dark btn-sm" @click="takeRequest(s.id)"><i class="fa-solid fa-hand-holding-heart"></i> I will help</button>
+    </article>
+  </template>
+</section>
+
+<section class="space-y-2">
+  <h2 class="h-sec">I am helping</h2>
+  <div class="card text-center text-slate-500" x-show="!myRequests().length">Nothing yet.</div>
+  <template x-for="s in myRequests()" :key="s.id">
+    <article class="card space-y-2">
+      <div class="flex items-start justify-between gap-2"><div><b x-text="wk(s.workerId) ? wk(s.workerId).name : 'Worker'"></b><div class="text-sm text-slate-600" x-text="reqTypeLabel(s.type)"></div></div><span class="chip bg-indigo-100 text-indigo-800">Helping</span></div>
+      <p class="text-sm" x-text="s.message"></p>
+      <p class="text-sm text-indigo-800" x-show="s.date"><i class="fa-solid fa-calendar-day"></i> <span x-text="fdate(s.date) + ' / ' + s.place"></span></p>
+      <template x-for="(n, i) in s.notes" :key="i"><div class="text-xs text-slate-500 border-l-2 border-slate-300 pl-2" x-text="fdate(n.at) + ': ' + n.text"></div></template>
+      <input class="inp" placeholder="Add a note (optional)" x-model="noteF[s.id]">
+      <div class="grid grid-cols-2 gap-2"><button class="btn btn-ghost btn-sm" @click="addNote(s.id)">Save note</button><button class="btn btn-green btn-sm" @click="resolveRequest(s.id)"><i class="fa-solid fa-check"></i> Mark done</button></div>
+    </article>
+  </template>
+</section>
+
+<section class="card space-y-3">
+  <h2 class="h-sec">Book a practical skill test</h2>
+  <p class="text-sm text-slate-600">Arrange for a worker to meet an Ustad in person.</p>
+  <div><label class="lbl" for="ap_w">Worker</label><select id="ap_w" class="inp" x-model="apptF.workerId"><option value="">Choose...</option><template x-for="w in nearbyWorkers()" :key="w.id"><option :value="w.id" x-text="w.name + ' (' + w.trade + ')'"></option></template></select><p class="err" x-show="errs.workerId" x-text="errs.workerId"></p></div>
+  <div><label class="lbl" for="ap_u">Ustad</label><select id="ap_u" class="inp" x-model="apptF.ustadId"><option value="">Choose...</option><template x-for="u in db.ustads" :key="u.id"><option :value="u.id" x-text="u.name + ' (' + u.trade + ')'"></option></template></select><p class="err" x-show="errs.ustadId" x-text="errs.ustadId"></p></div>
+  <div class="grid grid-cols-2 gap-3"><div><label class="lbl" for="ap_d">Date</label><input id="ap_d" type="date" class="inp" :min="todayMax()" x-model="apptF.date"><p class="err" x-show="errs.date" x-text="errs.date"></p></div><div><label class="lbl" for="ap_p">Place</label><input id="ap_p" class="inp" x-model="apptF.place"><p class="err" x-show="errs.place" x-text="errs.place"></p></div></div>
+  <button class="btn btn-dark btn-lg" @click="bookAppointment()"><i class="fa-solid fa-calendar-check"></i> Book appointment</button>
+</section>
+
+<section class="space-y-2" x-show="doneRequests().length"><h2 class="h-sec">Done</h2>
+  <template x-for="s in doneRequests()" :key="s.id"><div class="card-flat text-sm"><b x-text="wk(s.workerId) ? wk(s.workerId).name : 'Worker'"></b> / <span x-text="reqTypeLabel(s.type)"></span></div></template></section>

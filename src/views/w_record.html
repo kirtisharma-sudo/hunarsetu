@@ -1,0 +1,34 @@
+<button class="text-sm font-bold text-slate-600" @click="back()"><i class="fa-solid fa-arrow-left"></i> <span x-text="tr('Back')"></span></button>
+{{>p_record}}
+
+<!-- Worker actions -->
+<section class="card space-y-3" x-show="R.status==='assigned'">
+  <p class="text-sm">When you reach the site, mark that you have started.</p>
+  <button class="btn btn-dark btn-lg" @click="startWork(R.id)"><i class="fa-solid fa-play"></i> I have started the work</button>
+</section>
+
+<section class="card space-y-3" x-show="['assigned','in_progress','correction_requested'].includes(R.status)">
+  <h3 class="h-sec">Send proof that the work is done</h3>
+  <div><label class="lbl" for="evnote">What did you finish?</label><textarea id="evnote" rows="3" class="inp" placeholder="Example: All 5 fans fitted and tested." x-model="ev.note"></textarea><p class="err" x-show="errs.note" x-text="errs.note"></p></div>
+  <div>
+    <span class="lbl">Photos of the finished work (up to 6)</span>
+    <div class="grid grid-cols-3 gap-2">
+      <template x-for="(p, i) in ev.photos" :key="p"><div class="relative aspect-square rounded-lg overflow-hidden bg-slate-200"><img :src="media(p)" alt="Work photo" class="w-full h-full object-cover"><button class="absolute top-1 right-1 w-7 h-7 rounded-full bg-slate-900/80 text-white text-xs" @click="evRemove(i)" aria-label="Remove photo"><i class="fa-solid fa-xmark"></i></button></div></template>
+      <label class="aspect-square rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-500 cursor-pointer" x-show="ev.photos.length < 6"><i class="fa-solid fa-camera text-xl"></i><span class="text-xs font-bold">Add</span><input type="file" accept="image/*" capture="environment" multiple class="hidden" @change="evAddPhotos($event)"></label>
+    </div>
+  </div>
+  <button class="btn btn-green btn-lg" @click="submitEvidence(R.id)"><i class="fa-solid fa-paper-plane"></i> Send to contractor</button>
+</section>
+
+<section class="note note-info" x-show="R.status==='evidence_submitted'">Waiting for the contractor to check your work.</section>
+
+<section class="card space-y-2" x-show="R.status==='contractor_confirmed'">
+  <h3 class="font-extrabold">The contractor confirmed your work.</h3>
+  <p class="text-sm text-slate-600">Please confirm too, so this job becomes part of your permanent work history.</p>
+  <button class="btn btn-green btn-lg" @click="workerConfirm(R.id)"><i class="fa-solid fa-circle-check"></i> <span x-text="tr('Confirm')"></span> this record</button>
+</section>
+
+<div class="grid grid-cols-2 gap-2">
+  <button class="btn btn-ghost" x-show="payOf(R.id)" @click="payReset(); go('w_pay', {id: R.id})"><i class="fa-solid fa-indian-rupee-sign"></i> Payment record</button>
+  <button class="btn btn-ghost" @click="reportProblem(R.id)" x-show="R.status!=='completed' || true"><i class="fa-solid fa-hand-holding-heart"></i> Problem? Ask for help</button>
+</div>

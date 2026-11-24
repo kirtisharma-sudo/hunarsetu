@@ -1,0 +1,20 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('Verification Support')"></h1>
+  <p class="text-sm text-slate-600">Help a worker you registered record and send a skill video. Only the Ustad can approve the skill.</p></section>
+
+<section class="card space-y-2">
+  <h2 class="h-sec">Workers I registered</h2>
+  <div class="text-sm text-slate-500" x-show="!mitraWorkers().filter(w => mitraCanAct(w)).length">None yet. Register a worker with consent first, from Assist Registration.</div>
+  <template x-for="w in mitraWorkers().filter(w => mitraCanAct(w))" :key="w.id">
+    <button class="w-full text-left card-flat flex items-center gap-2 min-h-[52px]" :class="af.workerId===w.id && 'border-amber-400 bg-amber-50'" @click="afInit(w.id)"><span class="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 font-black flex items-center justify-center" x-text="initials(w.name)"></span><span class="flex-1"><b x-text="w.name"></b><br><span class="text-xs text-slate-500" x-text="w.trade + ' / ' + assessmentsOf(w.id).length + ' tests'"></span></span><span class="chip" :class="isVerified(w) ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'" x-text="isVerified(w) ? 'Endorsed' : 'Not yet'"></span></button>
+  </template>
+</section>
+
+<template x-if="af && af.workerId && wk(af.workerId) && mitraCanAct(wk(af.workerId))">
+  <div class="space-y-4">
+    <div class="note note-warn text-sm">Helping <b x-text="wk(af.workerId).name"></b>. Make sure they are present and agree to this video being sent.</div>
+    {{>p_assess}}
+    <section class="space-y-2"><h2 class="h-sec">Tests already sent</h2>
+      <p class="text-sm text-slate-500 card-flat" x-show="!assessmentsOf(af.workerId).length">None.</p>
+      <template x-for="a in assessmentsOf(af.workerId)" :key="a.id"><div class="card-flat flex items-center justify-between gap-2"><b x-text="skName(a.skillId)"></b><span class="chip" :class="asmStatusCls(a)" x-text="asmStatusLabel(a)"></span></div></template></section>
+  </div>
+</template>

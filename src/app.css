@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', sans-serif; @apply bg-stone-200 text-slate-800 text-[15px] leading-relaxed; }
+  [x-cloak] { display: none !important; }
+  :focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+}
+@layer components {
+  .card { @apply bg-white rounded-2xl border border-slate-200 p-4 shadow-sm; }
+  .card-flat { @apply bg-white rounded-xl border border-slate-200 p-3; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 min-h-[48px] font-bold text-[15px] transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-lg { @apply min-h-[56px] text-base w-full; }
+  .btn-sm { @apply min-h-[40px] px-3 text-sm rounded-lg; }
+  .btn-primary { @apply bg-amber-400 text-slate-900 hover:bg-amber-300; }
+  .btn-dark { @apply bg-slate-900 text-white hover:bg-slate-800; }
+  .btn-green { @apply bg-emerald-600 text-white hover:bg-emerald-500; }
+  .btn-red { @apply bg-red-600 text-white hover:bg-red-500; }
+  .btn-ghost { @apply bg-white text-slate-800 border border-slate-300 hover:bg-slate-50; }
+  .inp { @apply w-full rounded-xl border border-slate-300 bg-white px-3 min-h-[48px] text-base focus:border-amber-500; }
+  textarea.inp { @apply py-2; }
+  .lbl { @apply block text-sm font-bold text-slate-700 mb-1; }
+  .err { @apply text-sm font-semibold text-red-600 mt-1; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold; }
+  .pick { @apply inline-flex items-center gap-1.5 rounded-xl border-2 border-slate-200 bg-white px-3 min-h-[44px] text-sm font-bold; }
+  .pick-on { @apply border-amber-400 bg-amber-50 text-slate-900; }
+  .h-sec { @apply text-xs font-black tracking-widest uppercase text-slate-500; }
+  .note { @apply rounded-xl border px-3 py-2 text-sm; }
+  .note-warn { @apply bg-amber-50 border-amber-200 text-amber-900; }
+  .note-info { @apply bg-indigo-50 border-indigo-200 text-indigo-900; }
+  .note-ok { @apply bg-emerald-50 border-emerald-200 text-emerald-900; }
+  .note-bad { @apply bg-red-50 border-red-200 text-red-800; }
+}
+.wavebar { width: 5px; border-radius: 3px; background: #f59e0b; transition: height .12s; }
+.rec-pulse { animation: recp 1.2s infinite; }
+@keyframes recp { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); } 50% { box-shadow: 0 0 0 12px rgba(239,68,68,0); } }
+.hide-scroll { scrollbar-width: none; } .hide-scroll::-webkit-scrollbar { display: none; }
+.qrbox svg { width: 100%; height: auto; display: block; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ===== Responsive layout (mobile styles above are unchanged) ===== */
+/* Tablet: wider column, nav stays at the bottom, lists use two columns */
+@media (min-width: 768px) {
+  .app-shell { max-width: 48rem; }
+  .app-nav { max-width: 48rem; }
+  .app-main { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .app-nav-in > button { font-size: 12px; }
+  .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #main section:has(> article) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; align-items: start; }
+  #main section:has(> article) > * { margin: 0; }
+  #main section:has(> article) > :not(article) { grid-column: 1 / -1; }
+}
+/* Desktop: header on top, sidebar navigation on the left, content on the right */
+@media (min-width: 1024px) {
+  .app-shell { max-width: 90rem; display: grid; grid-template-columns: 15rem minmax(0, 1fr); grid-template-areas: "head head" "warn warn" "pub pub" "nav main"; grid-template-rows: auto auto auto 1fr; align-items: stretch; }
+  .app-shell > .app-head { grid-area: head; display: flex; align-items: center; justify-content: space-between; }
+  .app-shell > .app-head .app-roles { width: 30rem; padding-top: .5rem; }
+  .app-shell > .note-bad { grid-area: warn; }
+  .app-shell > .app-nav { grid-area: nav; position: sticky; left: auto; bottom: auto; top: var(--hh, 5.5rem); transform: none; max-width: none; width: auto; height: calc(100vh - var(--hh, 5.5rem)); border-top: 0; border-right: 1px solid #cbd5e1; box-shadow: none; overflow-y: auto; align-self: start; }
+  .app-nav-in { flex-direction: column; overflow: visible; justify-content: flex-start !important; padding: .75rem .5rem; gap: .25rem; }
+  .app-nav-in > button { flex: none; flex-direction: row; justify-content: flex-start; gap: .75rem; min-height: 48px; padding: .5rem .75rem; font-size: 14px; text-align: left; border-top: 0; border-left: 4px solid transparent; border-radius: .5rem; }
+  .app-nav-in > button.border-amber-400 { border-left-color: #fbbf24; }
+  .app-nav-in > button i { width: 1.5rem; text-align: center; font-size: 1.1rem; }
+  .app-shell > .app-main { grid-area: main; padding: 1.5rem 2rem 3rem; min-width: 0; }
+  .app-main > div { max-width: 68rem; margin-left: auto; margin-right: auto; }
+  .app-main > div:has(form), .app-main > div:has(.inp) { max-width: 68rem; }
+  #main section:has(> article) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat-grid { gap: 1rem; }
+  .card { padding: 1.25rem; }
+}
+@media (min-width: 1536px) { .app-shell { box-shadow: 0 0 40px rgba(0,0,0,.12); } }
+/* Public verification page and QR stay readable on wide screens */
+@media (min-width: 768px) { .qrbox { max-width: 18rem; margin-left: auto; margin-right: auto; } }
+@media (min-width: 1024px) { .app-shell > section { grid-area: pub; } }
+@media (min-width: 1024px) {
+  :root { --hh: 6rem; }
+  .app-shell > .app-head .app-brand { flex: 1; justify-content: flex-start; gap: 1rem; }
+  .app-shell > .app-head .app-brand > .flex.items-center.gap-1\.5 { margin-left: auto; }
+  .app-shell > .app-main { padding-top: 1.25rem; }
+  .form-narrow { max-width: 46rem; margin-left: auto; margin-right: auto; }
+}
+@media (min-width: 768px) { section[x-show="pub"] > :not(:first-child) { max-width: 44rem; margin-left: auto; margin-right: auto; width: 100%; } }

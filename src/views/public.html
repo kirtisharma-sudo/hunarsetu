@@ -1,0 +1,61 @@
+<section x-show="pub" x-cloak class="flex-1 bg-slate-100">
+  <div class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center"><i class="fa-solid fa-bridge text-slate-900 text-sm"></i></div><span class="font-extrabold">Hunar<span class="text-amber-400">Setu</span></span></div>
+    <button class="btn btn-sm bg-slate-800 text-white border border-slate-600" @click="closePublic()"><i class="fa-solid fa-arrow-left"></i> Open app</button>
+  </div>
+
+  <template x-if="pub && pub.missing">
+    <div class="p-5"><div class="card text-center"><i class="fa-solid fa-circle-exclamation text-3xl text-amber-500"></i>
+      <h1 class="text-lg font-extrabold mt-2">This card cannot be opened</h1>
+      <p class="text-sm text-slate-600 mt-1">The link is incomplete or the profile was deleted.</p></div></div>
+  </template>
+
+  <template x-if="pub && pub.snap">
+    <div class="p-4 space-y-4">
+      <p class="h-sec">Public verification page. No login needed.</p>
+
+      <div class="note note-warn" x-show="pub.snap.d"><b>Sample data.</b> This worker is a made-up demo profile. Nothing here is real verification.</div>
+      <div class="note note-info" x-show="!pub.live">Showing the details saved in this link on <b x-text="fdate(pub.snap.at)"></b>. Open it on the device that holds the profile to see live updates.</div>
+
+      <div class="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-xl font-black" x-text="initials(pub.snap.n)"></div>
+          <div class="flex-1 min-w-0">
+            <h1 class="text-xl font-extrabold truncate" x-text="pub.snap.n"></h1>
+            <p class="text-sm text-slate-300" x-text="pub.snap.t + ' / ' + pub.snap.l"></p>
+            <p class="text-xs text-slate-400" x-text="pub.snap.e + ' years of experience (as stated by the worker)'"></p>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2 text-center">
+          <div class="rounded-lg bg-white/10 p-2"><div class="text-xl font-extrabold" x-text="pub.snap.c"></div><div class="text-[11px] text-slate-300">Jobs confirmed by both sides</div></div>
+          <div class="rounded-lg bg-white/10 p-2"><div class="text-xl font-extrabold" x-text="pub.snap.r ? pub.snap.r + ' / 5' : '-'"></div><div class="text-[11px] text-slate-300">Contractor rating</div></div>
+        </div>
+      </div>
+
+      <section class="card space-y-2">
+        <h2 class="h-sec">Skills</h2>
+        <template x-for="s in pubView(pub.snap).skills" :key="s.name">
+          <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0">
+            <span class="font-bold" x-text="s.name"></span>
+            <span class="chip" :class="levelChip(s.level).cls"><i class="fa-solid" :class="levelChip(s.level).icon"></i><span x-text="levelChip(s.level).en"></span></span>
+          </div>
+        </template>
+        <p class="text-xs text-slate-500">Only "Ustad reviewed" and "Practically assessed" mean a person checked the skill. "Self-declared" is what the worker says about themselves.</p>
+      </section>
+
+      <section class="card space-y-2">
+        <h2 class="h-sec">Endorsements</h2>
+        <p class="text-sm text-slate-500" x-show="!(pub.snap.u || []).length">No Ustad endorsement yet.</p>
+        <template x-for="(u, i) in pubView(pub.snap).ends" :key="i">
+          <div class="card-flat">
+            <div class="font-bold" x-text="u.skill"></div>
+            <div class="text-sm text-slate-600">By <b x-text="u.ustad"></b>, <span x-text="fdate(u.date)"></span></div>
+            <div class="mt-1 flex flex-wrap gap-1"><span class="chip" :class="levelChip(u.level).cls" x-text="levelChip(u.level).en"></span><span class="chip bg-slate-100 text-slate-600" x-show="u.sample">Sample Ustad</span><span class="chip bg-slate-100 text-slate-600" x-show="u.audio"><i class="fa-solid fa-microphone"></i> Voice note recorded</span></div>
+          </div>
+        </template>
+      </section>
+
+      <p class="text-xs text-slate-500 text-center px-4">Phone numbers and private details are never shown on this page. HunarSetu records skills and work history. It does not guarantee any worker's quality or any payment.</p>
+    </div>
+  </template>
+</section>

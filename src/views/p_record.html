@@ -1,0 +1,45 @@
+<!-- Shared work record detail. Both worker and contractor see the same record. -->
+<section class="card space-y-3">
+  <div class="flex items-start justify-between gap-2">
+    <div class="min-w-0"><h2 class="text-lg font-extrabold text-slate-900" x-text="R.title"></h2>
+      <p class="text-sm text-slate-600"><i class="fa-solid fa-location-dot text-amber-500"></i> <span x-text="R.location"></span></p></div>
+    <span class="chip shrink-0" :class="recStatusCls(R)" x-text="recStatusLabel(R)"></span>
+  </div>
+  <div class="grid grid-cols-2 gap-2 text-sm">
+    <div class="card-flat"><div class="text-xs text-slate-500">Worker</div><b x-text="wk(R.workerId) && wk(R.workerId).name"></b></div>
+    <div class="card-flat"><div class="text-xs text-slate-500">Contractor</div><b x-text="con(R.contractorId) && con(R.contractorId).name"></b></div>
+    <div class="card-flat"><div class="text-xs text-slate-500">Start</div><b x-text="fdate(R.startDate) || '-'"></b></div>
+    <div class="card-flat"><div class="text-xs text-slate-500">Completed</div><b x-text="fdate(R.endDate) || '-'"></b></div>
+    <div class="card-flat col-span-2"><div class="text-xs text-slate-500">Agreed payment</div><b class="text-lg" x-text="inr(R.agreedAmount)"></b></div>
+  </div>
+  <div><p class="h-sec">Work to be done</p><p class="text-sm" x-text="R.work"></p></div>
+  <span class="chip bg-slate-100 text-slate-600" x-show="R.isDemo">Sample record</span>
+</section>
+
+<section class="card">
+  <h3 class="h-sec mb-2">Progress</h3>
+  <ol class="space-y-3">
+    <template x-for="(s, i) in recSteps(R)" :key="i">
+      <li class="flex items-center gap-3"><span class="w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0" :class="s.done ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'"><i class="fa-solid" :class="s.done ? 'fa-check' : 'fa-circle'"></i></span>
+        <span class="flex-1 font-semibold" :class="!s.done && 'text-slate-400'" x-text="s.t"></span><span class="text-xs text-slate-500" x-text="s.d"></span></li>
+    </template>
+  </ol>
+  <p class="note note-info text-xs mt-3">A job is shown as verified experience only after the contractor and the worker have both confirmed it.</p>
+</section>
+
+<section class="card space-y-2" x-show="R.workerNote || (R.evidence||[]).length">
+  <h3 class="h-sec">Completion proof from worker</h3>
+  <p class="text-sm" x-text="R.workerNote"></p>
+  <div class="grid grid-cols-3 gap-2">
+    <template x-for="m in (R.evidence||[])" :key="m">
+      <a :href="media(m)" target="_blank" rel="noopener" class="block aspect-square rounded-lg overflow-hidden bg-slate-200"><img :src="media(m)" alt="Work photo" class="w-full h-full object-cover" x-show="media(m)"></a>
+    </template>
+  </div>
+</section>
+
+<section class="card space-y-1" x-show="R.contractorConfirmedAt">
+  <h3 class="h-sec">Contractor feedback</h3>
+  <div class="text-amber-500"><template x-for="n in 5" :key="n"><i class="fa-solid fa-star" :class="n <= R.rating ? '' : 'text-slate-300'"></i></template></div>
+  <p class="text-sm" x-text="R.feedback || 'No written feedback'"></p>
+</section>
+<section class="note note-bad" x-show="R.status==='correction_requested'"><b>Correction asked:</b> <span x-text="R.correctionNote"></span></section>

@@ -1,0 +1,23 @@
+<section>
+  <h1 class="text-xl font-extrabold" x-text="tr('Mera Hisaab')"></h1>
+  <p class="text-sm text-slate-600">Your payment record for each job: what was agreed, what you got and what is left.</p>
+</section>
+<template x-if="!me"><div class="note note-warn">Create your profile on the Home tab first. <button class="font-bold underline" @click="tab('w_home')">Go to Home</button></div></template>
+<template x-if="me">
+  <div class="space-y-4">
+    <div class="rounded-2xl bg-slate-900 text-white p-4 text-center"><div class="text-xs text-slate-300 uppercase tracking-widest font-bold">Total still to receive</div><div class="text-3xl font-extrabold text-amber-400" x-text="inr(totalOutstanding(myPayRecords()))"></div></div>
+    <div class="card text-center text-slate-500" x-show="!myPayRecords().length"><i class="fa-solid fa-indian-rupee-sign text-3xl text-slate-300"></i><p class="font-bold mt-2">No payment records yet</p><p class="text-sm">A record starts when a contractor assigns you a job.</p></div>
+    <template x-for="r in myPayRecords()" :key="r.id">
+      <button class="w-full text-left card space-y-2" @click="payReset(); go('w_pay', {id: r.id})">
+        <div class="flex items-start justify-between gap-2"><b x-text="r.title"></b><span class="chip shrink-0" :class="payTotals(r.id).cls" x-text="payTotals(r.id).status"></span></div>
+        <div class="grid grid-cols-3 gap-2 text-center text-sm">
+          <div><div class="text-[10px] text-slate-500" x-text="tr('Agreed amount')"></div><b x-text="inr(payTotals(r.id).agreed)"></b></div>
+          <div><div class="text-[10px] text-slate-500" x-text="tr('Paid')"></div><b x-text="inr(payTotals(r.id).advance + payTotals(r.id).paid)"></b></div>
+          <div><div class="text-[10px] text-slate-500" x-text="tr('Outstanding')"></div><b class="text-amber-700" x-text="inr(payTotals(r.id).outstanding)"></b></div>
+        </div>
+        <div class="text-xs font-bold text-amber-700" x-show="waitingFor(r.id, 'worker')"><i class="fa-solid fa-bell"></i> <span x-text="waitingFor(r.id, 'worker') + ' entry waiting for your confirmation'"></span></div>
+      </button>
+    </template>
+    <div class="note note-warn text-sm"><b>Please note.</b> HunarSetu records payment agreements and confirmations. It does not guarantee payment and does not hold money (no escrow).</div>
+  </div>
+</template>

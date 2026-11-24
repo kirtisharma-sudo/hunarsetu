@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>HunarSetu - Voice-First Skill Verification</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script>
+tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'], mono: ['ui-monospace','SFMono-Regular','Menlo','monospace'] } } } };
+
+function app() {
+  return {
+    currentRole: 'worker',
+    pitchOpen: false,
+    briefOpen: false,
+    toast: '',
+    toastTimer: null,
+
+    // Worker state
+    isRecording: false,
+    hasRecorded: false,
+    recSeconds: 0,
+    recTimer: null,
+    transcribing: false,
+    extracted: null,
+
+    videoUploaded: false,
+    uploading: false,
+    uploadPct: 0,
+    scanStep: 0,        // 0..3 number of checks completed
+    scanning: false,
+    aiScore: 0,
+
+    // Ustad state
+    isVouched: false,
+    vouchBusy: false,
+    vouchProgress: 0,
+    vouchTimer: null,
+    videoPlaying: false,
+    videoProgress: 0,
+    videoTimer: null,
+
+    // Contractor audio
+    isPlayingAudio: false,
+    audioProgress: 0,
+    audioTimer: null,
+
+    // Pitch
+    pitchRunning: false,
+    pitchStep: 0,
+    pitchTimer: null,
+
+    get pendingCount() { return (this.videoUploaded && this.aiPassed && !this.isVouched) ? 1 : 0; },
+    get aiPassed() { return this.scanStep >= 3 && !this.scanning; },
+    get audioSeconds() { return Math.round(this.audioProgress * 5 / 100); },
+    get videoSeconds() { return Math.round(this.videoProgress * 15 / 100); },
+    fmt(s) { return '0:' + String(s).padStart(2, '0'); },
+
+    showToast(msg) {
+      this.toast = msg;
+      clearTimeout(this.toastTimer);
+      this.toastTimer = setTimeout(() => this.toast = '', 2600);
+    },
+    setRole(r) {
+      this.currentRole = r;
+      this.stopAudio();
+      this.stopVideo();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    // Voice bio
+    toggleRecord() {
+      if (this.isRecording) { this.finishRecord(); return; }
+      this.hasRecorded = false; this.extracted = null; this.recSeconds = 0;
+      this.isRecording = true;
+      this.recTimer = setInterval(() => {
+        this.recSeconds++;
+        if (this.recSeconds >= 12) this.finishRecord();
+      }, 1000);
+    },
+    finishRecord() {
+      clearInterval(this.recTimer);
+      this.isRecording = false;
+      if (this.recSeconds < 1) this.recSeconds = 1;
+      this.hasRecorded = true;
+      this.transcribing = true;
+      setTimeout(() => {
+        this.transcribing = false;
+        this.extracted = {
+          language: 'hi-IN',
+          transcript: 'Main Ramesh hoon. Pichle 8 saal se Najafgarh mein bijli ka kaam karta hoon. 3-phase wiring, DB box aur earthing mera kaam hai.',
+          name: 'Ramesh Kumar',
+          trade: 'Electrician',
+          experience_years: 8,
+          skills: ['3-Phase Wiring', 'DB Box Assembly', 'Earthing'],
+          confidence: 0.96
+        };
+      }, 1800);
+    },
+
+    // Video upload + AI scan
+    startUpload() {
+      if (this.uploading || this.scanning) return;
+      this.videoUploaded = false; this.scanStep = 0; this.uploadPct = 0; this.uploading = true;
+      const t = setInterval(() => {
+        this.uploadPct = Math.min(100, this.uploadPct + 8 + Math.random() * 10);
+        if (this.uploadPct >= 100) {
+          clearInterval(t);
+          this.uploadPct = 100;
+          this.uploading = false;
+          this.videoUploaded = true;
+          this.runScan();
+        }
+      }, 180);
+    },
+    runScan() {
+      this.scanning = true; this.scanStep = 0; this.aiScore = 0;
+      const steps = [900, 1900, 2800];
+      steps.forEach((ms, i) => setTimeout(() => {
+        this.scanStep = i + 1;
+        this.aiScore = [38, 71, 94][i];
+        if (i === 2) { this.scanning = false; this.showToast('Vision AI pre-screen passed (94%)'); }
+      }, ms));
+    },
+    resetAll() {
+      this.stopAudio(); this.stopVideo(); clearInterval(this.recTimer); clearInterval(this.vouchTimer);
+      Object.assign(this, {
+        isRecording: false, hasRecorded: false, recSeconds: 0, transcribing: false, extracted: null,
+        videoUploaded: false, uploading: false, uploadPct: 0, scanStep: 0, scanning: false, aiScore: 0,
+        isVouched: false, vouchBusy: false, vouchProgress: 0, audioProgress: 0
+      });
+      this.showToast('Demo reset');
+    },
+
+    // Ustad
+    toggleVideo() {
+      if (this.videoPlaying) { this.stopVideo(); return; }
+      this.videoPlaying = true; this.videoProgress = 0;
+      this.videoTimer = setInterval(() => {
+        this.videoProgress += 100 / 150;
+        if (this.videoProgress >= 100) this.stopVideo(true);
+      }, 100);
+    },
+    stopVideo(done) {
+      clearInterval(this.videoTimer); this.videoPlaying = false;
+      if (done) this.videoProgress = 100; else if (!this.videoPlaying && this.videoProgress < 100) this.videoProgress = this.videoProgress;
+    },
+    toggleVouch() {
+      if (this.vouchBusy) return;
+      if (this.isVouched) { this.isVouched = false; this.stopAudio(); this.audioProgress = 0; this.showToast('Endorsement withdrawn'); return; }
+      this.vouchBusy = true; this.vouchProgress = 0;
+      this.vouchTimer = setInterval(() => {
+        this.vouchProgress += 2;
+        if (this.vouchProgress >= 100) {
+          clearInterval(this.vouchTimer);
+          this.vouchBusy = false;
+          this.isVouched = true;
+          this.showToast('Vouch recorded. Contractor card is now VERIFIED');
+        }
+      }, 100);
+      this.speak();
+    },
+    caption: '',
+    captionTimer: null,
+    speak() {
+      const text = "Ramesh's neutral wire grounding is clean and safe. Approved.";
+      // Visible subtitle so judges can read the note even if audio is muted
+      this.caption = text;
+      clearTimeout(this.captionTimer);
+      this.captionTimer = setTimeout(() => this.caption = '', 5200);
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.rate = 1.05; window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    },
+
+    // Contractor audio
+    toggleAudio() {
+      if (!this.isVouched) return;
+      if (this.isPlayingAudio) { this.stopAudio(); return; }
+      if (this.audioProgress >= 100) this.audioProgress = 0;
+      this.isPlayingAudio = true;
+      this.speak();
+      this.audioTimer = setInterval(() => {
+        this.audioProgress += 2;
+        if (this.audioProgress >= 100) { this.audioProgress = 100; this.stopAudio(); }
+      }, 100);
+    },
+    stopAudio() {
+      clearInterval(this.audioTimer); this.isPlayingAudio = false;
+      try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+    },
+
+    hireUrl() {
+      const msg = encodeURIComponent('Namaste Ramesh, I saw your HunarSetu verified skill card (Level-2 Electrician). I have site work available. Are you free this week?');
+      return 'https://wa.me/919999999999?text=' + msg;
+    },
+    hire() {
+      if (!this.isVouched) return;
+      window.open(this.hireUrl(), '_blank', 'noopener');
+    },
+
+    // Pitch mode: auto-run the full workflow
+    pitchLabels: ['Problem', 'Worker records Hindi voice bio', 'Task video and Vision AI scan', 'Ustad vouches by voice', 'Contractor hires in 1 tap'],
+    runPitch() {
+      this.resetAll();
+      this.pitchOpen = false; this.pitchRunning = true; this.pitchStep = 0;
+      this.setRole('worker');
+      const at = (ms, fn) => setTimeout(fn, ms);
+      at(300, () => { this.pitchStep = 1; this.toggleRecord(); });
+      at(4200, () => { if (this.isRecording) this.finishRecord(); });
+      at(7000, () => { this.pitchStep = 2; this.startUpload(); });
+      at(14500, () => { this.pitchStep = 3; this.setRole('ustad'); });
+      at(16500, () => { this.toggleVouch(); });
+      at(22500, () => { this.pitchStep = 4; this.setRole('contractor'); });
+      at(25500, () => { this.toggleAudio(); });
+      at(32000, () => { this.pitchRunning = false; this.pitchStep = 0; });
+    },
+    stopPitch() { this.pitchRunning = false; this.pitchStep = 0; },
+
+    // Rendered via x-html: avoids Alpine <template x-for> cloning inside SVG
+    get qrSvg() {
+      return '<rect width="21" height="21" fill="#fff"/>' +
+        this.qrCells().map(c => `<rect x="${c.x}" y="${c.y}" width="1" height="1" fill="currentColor"/>`).join('');
+    },
+
+    // Deterministic QR-style matrix (visual only, encodes a card id)
+    qrCells() {
+      const n = 21, cells = []; let seed = 20260408;
+      const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+      const finder = (r, c) => {
+        const inBox = (r0, c0) => r >= r0 && r < r0 + 7 && c >= c0 && c < c0 + 7;
+        const draw = (r0, c0) => {
+          const dr = r - r0, dc = c - c0;
+          if (dr === 0 || dr === 6 || dc === 0 || dc === 6) return 1;
+          if (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4) return 1;
+          return 0;
+        };
+        if (inBox(0, 0)) return draw(0, 0);
+        if (inBox(0, n - 7)) return draw(0, n - 7);
+        if (inBox(n - 7, 0)) return draw(n - 7, 0);
+        return null;
+      };
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+        let v = finder(r, c);
+        if (v === null) {
+          const nearFinder = (r < 8 && c < 8) || (r < 8 && c > n - 9) || (r > n - 9 && c < 8);
+          v = nearFinder ? 0 : (rnd() > 0.52 ? 1 : 0);
+        }
+        if (v) cells.push({ x: c, y: r });
+      }
+      return cells;
+    }
+  };
+}
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
+<style>
+  [x-cloak]{display:none!important}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#e2e8f0}
+  .wa-pattern{background-color:#f1f5f9;background-image:radial-gradient(#cbd5e1 1px,transparent 1px);background-size:18px 18px}
+  .bar{width:4px;border-radius:4px;background:#f59e0b;height:6px}
+  .bar-live{animation:wave 0.9s ease-in-out infinite}
+  @keyframes wave{0%,100%{height:6px}50%{height:34px}}
+  @keyframes glowEm{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.55)}50%{box-shadow:0 0 0 10px rgba(16,185,129,0)}}
+  @keyframes glowAm{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.55)}50%{box-shadow:0 0 0 10px rgba(251,191,36,0)}}
+  .glow-em{animation:glowEm 2s infinite}
+  .glow-am{animation:glowAm 2s infinite}
+  @keyframes scan{0%{top:0}100%{top:100%}}
+  .scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#34d399,transparent);animation:scan 1.4s linear infinite}
+  .glass{background:linear-gradient(135deg,rgba(15,23,42,.96),rgba(30,41,59,.9));backdrop-filter:blur(10px);border:1px solid rgba(148,163,184,.25)}
+  .grad-border{background:linear-gradient(135deg,#fbbf24,#10b981,#6366f1);padding:1.5px}
+  .pop{animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+  .shine{background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.25) 50%,transparent 70%);background-size:200% 100%;animation:shine 2.6s linear infinite}
+  @keyframes shine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body class="text-slate-800 antialiased" x-data="app()" x-cloak>
+
+<div class="mx-auto max-w-md min-h-screen bg-slate-100 shadow-2xl relative flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-40 bg-slate-900 text-white shadow-xl">
+    <div class="px-4 pt-3 pb-2 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-[0_0_14px_rgba(251,191,36,.55)]">
+          <i class="fa-solid fa-bridge text-slate-900 text-sm"></i>
+        </div>
+        <div class="leading-tight">
+          <div class="text-lg font-extrabold tracking-tight">Hunar<span class="text-amber-400">Setu</span></div>
+          <div class="text-[9px] font-black tracking-[0.2em] uppercase text-slate-400">Build for Bharat / Track 6</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button @click="briefOpen = true" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition active:scale-95" title="Problem brief"><i class="fa-solid fa-file-lines text-xs"></i></button>
+        <button @click="pitchRunning ? stopPitch() : (pitchOpen = true)" class="h-8 px-2.5 rounded-lg text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 transition active:scale-95"
+          :class="pitchRunning ? 'bg-red-500 text-white animate-pulse' : 'bg-amber-400 text-slate-900 hover:bg-amber-300'">
+          <i class="fa-solid" :class="pitchRunning ? 'fa-stop' : 'fa-bolt'"></i>
+          <span x-text="pitchRunning ? 'Stop' : '60s Pitch'"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Role switcher -->
+    <nav class="px-3 pb-3">
+      <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-800/80 border border-slate-700">
+        <template x-for="r in [{k:'worker',l:'Worker',i:'fa-helmet-safety'},{k:'ustad',l:'Ustad',i:'fa-user-tie'},{k:'contractor',l:'Contractor',i:'fa-building'}]" :key="r.k">
+          <button @click="setRole(r.k)" class="relative py-2 rounded-lg text-[11px] font-black tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+            :class="currentRole === r.k ? 'bg-amber-400 text-slate-900 shadow-[0_0_14px_rgba(251,191,36,.5)]' : 'text-slate-300 hover:bg-slate-700'">
+            <i class="fa-solid mr-1" :class="r.i"></i><span x-text="r.l"></span>
+            <span x-show="r.k === 'ustad' && pendingCount > 0" class="absolute -top-1.5 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center" x-text="pendingCount"></span>
+          </button>
+        </template>
+      </div>
+    </nav>
+
+    <!-- Pitch progress -->
+    <div x-show="pitchRunning" x-transition class="px-4 pb-2.5">
+      <div class="flex items-center justify-between text-[10px] font-mono text-amber-300 mb-1.5">
+        <span class="uppercase tracking-wider font-black">Live demo</span>
+        <span x-text="pitchLabels[pitchStep]"></span>
+      </div>
+      <div class="flex gap-1">
+        <template x-for="i in 4" :key="i"><div class="h-1 flex-1 rounded-full transition-all duration-500" :class="pitchStep >= i ? 'bg-amber-400' : 'bg-slate-700'"></div></template>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 wa-pattern px-3.5 py-4 pb-24 space-y-4">
+
+    <!-- =================== WORKER =================== -->
+    <section x-show="currentRole === 'worker'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
+
+      <!-- Profile -->
+      <div class="rounded-2xl bg-white shadow-md border border-slate-200 overflow-hidden">
+        <div class="h-16 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 relative">
+          <div class="absolute inset-0 opacity-30" style="background-image:repeating-linear-gradient(45deg,#fbbf24 0 2px,transparent 2px 14px)"></div>
+        </div>
+        <div class="px-4 pb-4 -mt-8">
+          <div class="flex items-end justify-between">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 border-4 border-white shadow-lg flex items-center justify-center text-slate-900 text-xl font-black">RK</div>
+            <span class="mb-1 px-2 py-1 rounded-md text-[10px] font-black tracking-wider uppercase border"
+              :class="isVouched ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'">
+              <i class="fa-solid mr-1" :class="isVouched ? 'fa-circle-check' : 'fa-hourglass-half'"></i><span x-text="isVouched ? 'Verified' : 'Unverified'"></span>
+            </span>
+          </div>
+          <h1 class="mt-2 text-xl font-bold text-slate-900 tracking-tight">Ramesh Kumar</h1>
+          <p class="text-sm text-slate-500">Electrician &amp; Hardware Technician</p>
+          <div class="mt-2.5 flex flex-wrap gap-1.5">
+            <span class="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-black tracking-wider uppercase"><i class="fa-solid fa-location-dot mr-1 text-amber-500"></i>Najafgarh, South Delhi</span>
+            <span class="px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-black tracking-wider uppercase"><i class="fa-solid fa-briefcase mr-1"></i>8 Yrs Experience</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 1: Voice bio -->
+      <div class="rounded-2xl bg-white shadow-md border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-slate-900 text-amber-400 text-[11px] font-black flex items-center justify-center">1</span>
+            <h2 class="text-base font-bold text-slate-900">Voice Bio</h2>
+          </div>
+          <span class="text-[10px] font-black tracking-wider uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">Hindi</span>
+        </div>
+        <p class="text-sm text-slate-500 mb-3">Tap the mic and tell us about your work. No typing needed.</p>
+
+        <div class="rounded-xl bg-slate-900 p-4 flex flex-col items-center">
+          <div class="h-10 flex items-center gap-1 mb-3">
+            <template x-for="i in 24" :key="i">
+              <div class="bar" :class="isRecording ? 'bar-live' : ''" :style="'animation-delay:' + ((i * 83) % 700) + 'ms; opacity:' + (isRecording ? 1 : .35)"></div>
+            </template>
+          </div>
+          <button @click="toggleRecord()" class="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl shadow-xl transition hover:scale-[1.04] active:scale-[0.96]"
+            :class="isRecording ? 'bg-red-500 animate-pulse ring-4 ring-red-400/40' : 'bg-gradient-to-br from-amber-400 to-amber-600 text-slate-900 glow-am'">
+            <i class="fa-solid" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
+          </button>
+          <div class="mt-3 text-xs font-mono text-slate-300" x-text="isRecording ? ('Recording  ' + fmt(recSeconds)) : (hasRecorded ? ('Captured  ' + fmt(recSeconds)) : 'Tap to record')"></div>
+        </div>
+
+        <div x-show="transcribing" x-transition class="mt-3 flex items-center gap-2 text-xs font-mono text-slate-500">
+          <i class="fa-solid fa-circle-notch fa-spin text-indigo-500"></i> Running speech-to-text extraction...
+        </div>
+
+        <div x-show="extracted" x-transition class="mt-3 rounded-xl bg-slate-900 border border-slate-700 p-3 pop">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-black tracking-wider uppercase text-emerald-400"><i class="fa-solid fa-code mr-1"></i>STT JSON Output</span>
+            <span class="text-[10px] font-mono text-slate-400" x-text="extracted ? ('conf ' + extracted.confidence) : ''"></span>
+          </div>
+          <pre class="text-xs font-mono text-emerald-300 whitespace-pre-wrap leading-relaxed" x-text="extracted ? JSON.stringify(extracted, null, 2) : ''"></pre>
+        </div>
+      </div>
+
+      <!-- Step 2: Video -->
+      <div class="rounded-2xl bg-white shadow-md border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-slate-900 text-amber-400 text-[11px] font-black flex items-center justify-center">2</span>
+            <h2 class="text-base font-bold text-slate-900">Practical Task Video</h2>
+          </div>
+          <span class="text-[10px] font-black tracking-wider uppercase text-amber-700 bg-amber-50 px-2 py-1 rounded-md">15 Sec</span>
+        </div>
+        <p class="text-sm text-slate-500 mb-3">Task: <span class="font-bold text-slate-800">3-Phase Distribution Box Wiring</span></p>
+
+        <button @click="startUpload()" x-show="!videoUploaded && !uploading" class="w-full rounded-xl border-2 border-dashed border-slate-300 hover:border-amber-400 hover:bg-amber-50/40 py-7 flex flex-col items-center gap-2 transition hover:scale-[1.02] active:scale-[0.98]">
+          <span class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg"><i class="fa-solid fa-video"></i></span>
+          <span class="text-sm font-bold text-slate-800">Record or upload task video</span>
+          <span class="text-[10px] font-black tracking-wider uppercase text-slate-400">MP4 / 15s / low-bandwidth</span>
+        </button>
+
+        <div x-show="uploading" x-transition class="rounded-xl bg-slate-50 border border-slate-200 p-4">
+          <div class="flex justify-between text-xs font-mono text-slate-600 mb-2"><span>Compressing &amp; uploading</span><span x-text="Math.round(uploadPct) + '%'"></span></div>
+          <div class="h-2 rounded-full bg-slate-200 overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-emerald-500 transition-all duration-200" :style="'width:' + uploadPct + '%'"></div></div>
+        </div>
+
+        <div x-show="videoUploaded" x-transition class="flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+          <span class="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center"><i class="fa-solid fa-film"></i></span>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-bold text-slate-900 truncate">db_box_wiring_demo.mp4</div>
+            <div class="text-[11px] font-mono text-slate-500">0:15 / 1.8 MB</div>
+          </div>
+          <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+        </div>
+      </div>
+
+      <!-- Vision AI -->
+      <div class="glass rounded-2xl p-4 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-emerald-500/20 blur-2xl"></div>
+        <div class="flex items-center justify-between mb-3 relative">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300"><i class="fa-solid fa-robot"></i></span>
+            <div class="leading-tight">
+              <div class="text-sm font-bold">Vision AI Pre-Screen</div>
+              <div class="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400">Multi-agent safety audit</div>
+            </div>
+          </div>
+          <span x-show="aiPassed" class="pop glow-em px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-black tracking-wider uppercase">
+            <i class="fa-solid fa-check mr-1"></i>Passed 94%
+          </span>
+          <span x-show="scanning" class="px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-400/60 text-amber-300 text-[10px] font-black tracking-wider uppercase">Scanning</span>
+          <span x-show="!scanning && !aiPassed" class="px-2.5 py-1 rounded-md bg-slate-700 text-slate-300 text-[10px] font-black tracking-wider uppercase">Awaiting</span>
+        </div>
+
+        <div class="relative rounded-lg bg-slate-950/70 border border-slate-700 h-20 mb-3 overflow-hidden flex items-center justify-center">
+          <div x-show="scanning" class="scanline"></div>
+          <div class="text-[11px] font-mono text-slate-400" x-text="!videoUploaded ? 'No video submitted' : (scanning ? ('Analyzing frames... ' + aiScore + '%') : 'Analysis complete: confidence 94%')"></div>
+        </div>
+
+        <ul class="space-y-2 relative">
+          <template x-for="(c, idx) in [{t:'Safety gloves verified', i:'fa-hand'},{t:'Insulated pliers and wire stripper detected', i:'fa-screwdriver-wrench'},{t:'Camera stability approved', i:'fa-camera'}]" :key="idx">
+            <li class="flex items-center gap-2.5 text-xs font-mono rounded-lg px-3 py-2 border transition-all duration-500"
+              :class="scanStep > idx ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-200' : 'bg-slate-800/60 border-slate-700 text-slate-500'">
+              <i class="fa-solid w-4 text-center" :class="c.i"></i>
+              <span class="flex-1" x-text="c.t"></span>
+              <i class="fa-solid" :class="scanStep > idx ? 'fa-circle-check text-emerald-400' : (scanning && scanStep === idx ? 'fa-circle-notch fa-spin text-amber-400' : 'fa-circle text-slate-600')"></i>
+            </li>
+          </template>
+        </ul>
+      </div>
+
+      <div x-show="aiPassed && !isVouched" x-transition class="rounded-xl bg-amber-50 border border-amber-200 p-3 flex items-center gap-3">
+        <i class="fa-solid fa-paper-plane text-amber-600"></i>
+        <p class="text-xs text-amber-900 flex-1">Sent to <span class="font-bold">Master Suresh Sharma</span> for voice vouching.</p>
+        <button @click="setRole('ustad')" class="text-[10px] font-black tracking-wider uppercase text-amber-700 hover:text-amber-900">Open <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+      <div x-show="isVouched" x-transition class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-3 pop">
+        <i class="fa-solid fa-award text-emerald-600 text-lg"></i>
+        <p class="text-xs text-emerald-900 flex-1"><span class="font-bold">Skill card verified.</span> Contractors can now hire you in one tap.</p>
+        <button @click="setRole('contractor')" class="text-[10px] font-black tracking-wider uppercase text-emerald-700">View <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </section>
+
+    <!-- =================== USTAD =================== -->
+    <section x-show="currentRole === 'ustad'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
+
+      <div class="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-amber-400/20 blur-2xl"></div>
+        <div class="flex items-center gap-3 relative">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-600 text-slate-900 flex items-center justify-center text-lg font-black shadow-[0_0_16px_rgba(251,191,36,.5)]">SS</div>
+          <div class="flex-1">
+            <div class="text-lg font-bold tracking-tight">Master Suresh Sharma</div>
+            <div class="text-xs text-slate-300">Senior Contractor</div>
+            <span class="mt-1 inline-block px-2 py-0.5 rounded bg-amber-400 text-slate-900 text-[10px] font-black tracking-wider uppercase">30+ Yrs Experience</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-[11px] font-black tracking-[0.2em] uppercase text-slate-500">Pending Endorsements</h2>
+        <span class="min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-black flex items-center justify-center transition-colors" :class="pendingCount > 0 ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'" x-text="pendingCount"></span>
+      </div>
+
+      <!-- Empty -->
+      <div x-show="!videoUploaded || !aiPassed" x-transition class="rounded-2xl bg-white border border-dashed border-slate-300 p-6 text-center">
+        <i class="fa-solid fa-inbox text-3xl text-slate-300 mb-2"></i>
+        <p class="text-sm font-bold text-slate-700">No worker submissions yet</p>
+        <p class="text-xs text-slate-500 mt-1 mb-4">A task video appears here after it clears the Vision AI pre-screen.</p>
+        <button @click="setRole('worker'); startUpload()" class="px-4 py-2 rounded-lg bg-slate-900 text-amber-400 text-[11px] font-black tracking-wider uppercase hover:scale-[1.02] active:scale-[0.98] transition">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Submit sample video
+        </button>
+      </div>
+
+      <!-- Card -->
+      <div x-show="videoUploaded && aiPassed" x-transition class="rounded-2xl bg-white shadow-md border border-slate-200 overflow-hidden">
+        <div class="p-3.5 flex items-center gap-3 border-b border-slate-100">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 font-black text-sm flex items-center justify-center">RK</div>
+          <div class="flex-1">
+            <div class="text-sm font-bold text-slate-900">Ramesh Kumar</div>
+            <div class="text-[11px] text-slate-500">Electrician / Najafgarh</div>
+          </div>
+          <span class="px-2 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black tracking-wider uppercase"><i class="fa-solid fa-robot mr-1"></i>AI 94%</span>
+        </div>
+
+        <!-- Video preview -->
+        <button @click="toggleVideo()" class="relative block w-full aspect-video bg-slate-900 group overflow-hidden hover:scale-[1.02] transition-transform duration-300 active:scale-[0.99]">
+          <svg viewBox="0 0 320 180" class="absolute inset-0 w-full h-full">
+            <defs><linearGradient id="vg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs>
+            <rect width="320" height="180" fill="url(#vg)"/>
+            <rect x="95" y="40" width="130" height="100" rx="6" fill="#334155" stroke="#64748b" stroke-width="2"/>
+            <g stroke-width="4" stroke-linecap="round" fill="none">
+              <path d="M115 60 H205" stroke="#fbbf24"/><path d="M115 80 H205" stroke="#ef4444"/><path d="M115 100 H205" stroke="#3b82f6"/><path d="M115 120 H205" stroke="#10b981"/>
+            </g>
+            <circle cx="115" cy="60" r="5" fill="#cbd5e1"/><circle cx="115" cy="80" r="5" fill="#cbd5e1"/><circle cx="115" cy="100" r="5" fill="#cbd5e1"/><circle cx="115" cy="120" r="5" fill="#cbd5e1"/>
+            <circle cx="205" cy="60" r="5" fill="#cbd5e1"/><circle cx="205" cy="80" r="5" fill="#cbd5e1"/><circle cx="205" cy="100" r="5" fill="#cbd5e1"/><circle cx="205" cy="120" r="5" fill="#cbd5e1"/>
+            <rect x="228" y="100" width="46" height="8" rx="3" fill="#f59e0b" :transform="videoPlaying ? 'rotate(-14 228 104)' : ''" style="transition:transform .4s"/>
+          </svg>
+          <div class="absolute inset-0 bg-slate-900/30 group-hover:bg-slate-900/10 transition"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="w-14 h-14 rounded-full bg-white/95 text-slate-900 flex items-center justify-center text-xl shadow-xl group-hover:scale-110 transition-transform"><i class="fa-solid" :class="videoPlaying ? 'fa-pause' : 'fa-play ml-0.5'"></i></span>
+          </div>
+          <span class="absolute top-2 left-2 px-2 py-1 rounded bg-slate-900/80 text-[10px] font-black tracking-wider uppercase text-amber-300">3-Phase DB Box</span>
+          <span class="absolute bottom-3 right-2 px-2 py-1 rounded bg-slate-900/85 text-[10px] font-mono font-bold text-white" x-text="videoPlaying ? (fmt(videoSeconds) + ' / 0:15') : '0:15 Demo Clip'"></span>
+          <div class="absolute bottom-0 left-0 right-0 h-1 bg-slate-700"><div class="h-full bg-amber-400" :style="'width:' + videoProgress + '%'"></div></div>
+        </button>
+
+        <div class="p-4 space-y-3">
+          <div class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs font-mono text-slate-600 leading-relaxed">
+            <span class="font-black text-slate-800 uppercase tracking-wider text-[10px] block mb-1">Voice note preview</span>
+            "Ramesh's neutral wire grounding is clean and safe. Approved."
+          </div>
+
+          <div x-show="vouchBusy" x-transition>
+            <div class="flex justify-between text-[11px] font-mono text-amber-700 mb-1"><span><i class="fa-solid fa-microphone mr-1 animate-pulse"></i>Recording endorsement</span><span x-text="fmt(Math.round(vouchProgress * 5 / 100)) + ' / 0:05'"></span></div>
+            <div class="h-2 rounded-full bg-amber-100 overflow-hidden"><div class="h-full bg-amber-500 transition-all duration-100" :style="'width:' + vouchProgress + '%'"></div></div>
+          </div>
+
+          <button @click="toggleVouch()" :disabled="vouchBusy"
+            class="w-full py-3.5 rounded-xl text-sm font-black tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+            :class="isVouched ? 'bg-emerald-600 text-white glow-em' : 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900'">
+            <i class="fa-solid" :class="isVouched ? 'fa-circle-check' : (vouchBusy ? 'fa-circle-notch fa-spin' : 'fa-hand-holding-hand')"></i>
+            <span x-text="isVouched ? 'Vouched - Tap to Withdraw' : (vouchBusy ? 'Recording...' : '1-Tap Voice Vouch')"></span>
+          </button>
+          <p class="text-[11px] text-slate-500 text-center">Your voice is attached to the worker's card as an unforgeable endorsement.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== CONTRACTOR =================== -->
+    <section x-show="currentRole === 'contractor'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
+
+      <div class="grad-border rounded-2xl shadow-xl">
+        <div class="rounded-[15px] overflow-hidden bg-white">
+          <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 relative">
+            <div class="absolute inset-0 shine pointer-events-none"></div>
+            <div class="flex items-center justify-between relative">
+              <span class="text-[9px] font-black tracking-[0.22em] uppercase text-slate-400">HunarSetu Digital Skill Card</span>
+              <span class="text-[10px] font-mono text-slate-400">HS-DL-2026-0408</span>
+            </div>
+            <div class="mt-3 flex items-start justify-between gap-3 relative">
+              <div class="flex-1">
+                <div class="text-xl font-bold tracking-tight">Ramesh Kumar</div>
+                <div class="text-xs text-slate-300 mt-0.5">Electrician &amp; Hardware Technician</div>
+                <div class="text-[11px] text-slate-400 mt-1"><i class="fa-solid fa-location-dot text-amber-400 mr-1"></i>Najafgarh, South Delhi</div>
+                <div class="text-[11px] text-slate-400"><i class="fa-solid fa-briefcase text-amber-400 mr-1"></i>8 years experience</div>
+                <span class="mt-3 inline-flex items-center px-2.5 py-1.5 rounded-md text-[10px] font-black tracking-wider uppercase transition-all"
+                  :class="isVouched ? 'bg-gradient-to-r from-amber-300 to-amber-500 text-slate-900 shadow-[0_0_14px_rgba(251,191,36,.6)]' : 'bg-slate-700 text-slate-300'">
+                  <i class="fa-solid mr-1.5" :class="isVouched ? 'fa-medal' : 'fa-lock'"></i>
+                  <span x-text="isVouched ? 'Verified Level-2 Electrician' : 'Level-2 Pending Vouch'"></span>
+                </span>
+              </div>
+              <div class="bg-white rounded-xl p-2 shadow-lg shrink-0 relative">
+                <svg viewBox="0 0 21 21" class="w-24 h-24 text-slate-900" shape-rendering="crispEdges" :class="isVouched ? '' : 'opacity-40'" x-html="qrSvg"></svg>
+                <div x-show="!isVouched" class="absolute inset-0 flex items-center justify-center"><i class="fa-solid fa-lock text-slate-700 text-xl"></i></div>
+              </div>
+            </div>
+            <div class="mt-3 text-[10px] font-mono text-slate-400 relative">Scan to verify on hunarsetu.in/v/HS-DL-2026-0408</div>
+          </div>
+
+          <div class="p-4 space-y-3">
+            <h3 class="text-[11px] font-black tracking-[0.2em] uppercase text-slate-500">Dual Verification</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 hover:scale-[1.02] transition">
+                <div class="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-2"><i class="fa-solid fa-robot"></i></div>
+                <div class="text-[10px] font-black tracking-wider uppercase text-emerald-700">Vision AI Check</div>
+                <div class="text-sm font-bold text-slate-900 mt-0.5" x-text="aiPassed ? 'PASSED' : 'PASSED (Demo)'"></div>
+                <div class="text-[10px] font-mono text-slate-500">94% confidence</div>
+              </div>
+              <div class="rounded-xl border p-3 transition-all duration-300 hover:scale-[1.02]" :class="isVouched ? 'bg-amber-50 border-amber-300 glow-am' : 'bg-slate-50 border-slate-200'">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-2 text-white" :class="isVouched ? 'bg-amber-500' : 'bg-slate-400'"><i class="fa-solid" :class="isVouched ? 'fa-user-check' : 'fa-user-clock'"></i></div>
+                <div class="text-[10px] font-black tracking-wider uppercase" :class="isVouched ? 'text-amber-700' : 'text-slate-500'">Master Ustad Vouch</div>
+                <div class="text-sm font-bold text-slate-900 mt-0.5 leading-tight" x-text="isVouched ? 'VERIFIED BY MASTER SURESH' : 'PENDING'"></div>
+                <div class="text-[10px] font-mono text-slate-500" x-text="isVouched ? '30+ yrs senior contractor' : 'Awaiting Ustad'"></div>
+              </div>
+            </div>
+
+            <!-- Audio player -->
+            <div class="rounded-xl border p-3 transition" :class="isVouched ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 border-slate-200'">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-black tracking-wider uppercase" :class="isVouched ? 'text-amber-400' : 'text-slate-400'"><i class="fa-solid fa-microphone-lines mr-1"></i>Ustad Voice Endorsement</span>
+                <span class="text-[10px] font-mono" :class="isVouched ? 'text-slate-300' : 'text-slate-400'" x-text="fmt(audioSeconds) + ' / 0:05'"></span>
+              </div>
+              <div class="flex items-center gap-3">
+                <button @click="toggleAudio()" :disabled="!isVouched" class="w-11 h-11 rounded-full flex items-center justify-center text-base shrink-0 transition hover:scale-105 active:scale-95 disabled:cursor-not-allowed"
+                  :class="isVouched ? 'bg-amber-400 text-slate-900 shadow-[0_0_14px_rgba(251,191,36,.5)]' : 'bg-slate-300 text-slate-500'">
+                  <i class="fa-solid" :class="isPlayingAudio ? 'fa-pause' : 'fa-play ml-0.5'"></i>
+                </button>
+                <div class="flex-1">
+                  <div class="flex items-end gap-[3px] h-6 mb-1.5">
+                    <template x-for="i in 30" :key="i">
+                      <div class="flex-1 rounded-sm transition-colors" :style="'height:' + (30 + Math.abs(Math.sin(i * 1.7)) * 70) + '%'" :class="(i / 30 * 100) <= audioProgress ? 'bg-amber-400' : (isVouched ? 'bg-slate-600' : 'bg-slate-300')"></div>
+                    </template>
+                  </div>
+                  <div class="h-1 rounded-full overflow-hidden" :class="isVouched ? 'bg-slate-700' : 'bg-slate-200'"><div class="h-full bg-amber-400 transition-all duration-100" :style="'width:' + audioProgress + '%'"></div></div>
+                </div>
+              </div>
+              <p x-show="!isVouched" class="text-[11px] text-slate-500 mt-2"><i class="fa-solid fa-lock mr-1"></i>Unlocks after the Ustad vouches.</p>
+              <p x-show="isVouched" class="text-[11px] italic text-slate-400 mt-2">"Ramesh's neutral wire grounding is clean and safe. Approved."</p>
+            </div>
+
+            <button @click="hire()" :disabled="!isVouched" class="w-full py-4 rounded-xl text-sm font-black tracking-wider uppercase flex items-center justify-center gap-2.5 text-white shadow-xl transition hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed"
+              :class="isVouched ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 glow-em' : 'bg-slate-300 text-slate-500'">
+              <i class="fa-brands fa-whatsapp text-xl"></i>
+              <span x-text="isVouched ? '1-Tap Hire on WhatsApp' : 'Awaiting Verification'"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer bar -->
+  <footer class="sticky bottom-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-4 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-2 text-[10px] font-mono text-slate-500"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Low-bandwidth mode / Voice-first</div>
+    <button @click="resetAll()" class="text-[10px] font-black tracking-wider uppercase text-slate-500 hover:text-slate-900 transition"><i class="fa-solid fa-rotate-left mr-1"></i>Reset demo</button>
+  </footer>
+
+  <!-- Subtitle banner for endorsement audio -->
+  <div x-show="caption" x-transition class="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md px-4 py-3 rounded-xl bg-slate-900/95 border border-amber-400/60 shadow-2xl">
+    <div class="text-[9px] font-black tracking-[0.2em] uppercase text-amber-400 mb-1"><i class="fa-solid fa-closed-captioning mr-1"></i>Ustad Suresh Sharma</div>
+    <div class="text-sm text-white" x-text="caption"></div>
+  </div>
+
+  <!-- Toast -->
+  <div x-show="toast" x-transition class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 max-w-[90%] px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-2xl border border-slate-700">
+    <i class="fa-solid fa-circle-check text-emerald-400 mr-2"></i><span x-text="toast"></span>
+  </div>
+
+  <!-- Pitch dialog -->
+  <div x-show="pitchOpen" x-transition.opacity class="fixed inset-0 z-50 bg-slate-900/70 flex items-end sm:items-center justify-center p-3" @click.self="pitchOpen = false">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-5 pop">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-slate-900">60-Second Pitch Mode</h3>
+        <button @click="pitchOpen = false" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-sm text-slate-600 mb-4">Runs the full workflow automatically: voice bio, video scan, Ustad vouch, then contractor hire. Audio uses your device voice engine.</p>
+      <ol class="space-y-2 mb-5">
+        <template x-for="(s, i) in pitchLabels.slice(1)" :key="i">
+          <li class="flex items-center gap-3 text-sm text-slate-700"><span class="w-6 h-6 rounded-full bg-slate-900 text-amber-400 text-[11px] font-black flex items-center justify-center" x-text="i + 1"></span><span x-text="s"></span></li>
+        </template>
+      </ol>
+      <button @click="runPitch()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 text-sm font-black tracking-wider uppercase shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"><i class="fa-solid fa-play mr-2"></i>Start Live Demo</button>
+    </div>
+  </div>
+
+  <!-- Problem brief -->
+  <div x-show="briefOpen" x-transition.opacity class="fixed inset-0 z-50 bg-slate-900/70 flex items-end sm:items-center justify-center p-3" @click.self="briefOpen = false">
+    <div class="w-full max-w-md max-h-[88vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-5 pop">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[10px] font-black tracking-[0.2em] uppercase text-amber-600">Problem Brief</span>
+        <button @click="briefOpen = false" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <h3 class="text-xl font-bold text-slate-900 tracking-tight mb-3">Skilled hands, no paper trail</h3>
+      <div class="space-y-3 text-sm text-slate-600">
+        <div class="rounded-lg bg-slate-50 border border-slate-200 p-3"><div class="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1">Problem</div>About 80% of informal blue-collar workers have no verifiable credentials or text resume, so skilled electricians and technicians lose out on steady work and fair wages.</div>
+        <div class="rounded-lg bg-slate-50 border border-slate-200 p-3"><div class="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1">Why existing tools fail</div>White-collar portals demand English text resumes. Generic video apps have no trusted verification layer.</div>
+        <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-3"><div class="text-[10px] font-black tracking-wider uppercase text-emerald-700 mb-1">HunarSetu</div>Voice bio in the worker's language, a 15-second task video screened by a multi-agent Vision AI, and a voice vouch from a Master Technician. The result is a QR skill card a contractor can trust and act on via WhatsApp.</div>
+        <div class="rounded-lg bg-amber-50 border border-amber-200 p-3"><div class="text-[10px] font-black tracking-wider uppercase text-amber-700 mb-1">Track</div>Build for Bharat / Track 6: Education, Skills and Employment, Localized Vocational Skill Verification.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

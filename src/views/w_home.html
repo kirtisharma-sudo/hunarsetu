@@ -1,0 +1,82 @@
+<!-- No profile yet: onboarding -->
+<template x-if="!me">
+  <div class="space-y-4">
+    <section class="rounded-2xl bg-slate-900 text-white p-5 space-y-2">
+      <h1 class="text-2xl font-extrabold leading-tight">Namaste. <span class="text-amber-400">No resume needed.</span></h1>
+      <p class="text-slate-300" lang="hi">अपनी आवाज़ से अपनी पहचान बनाइए। लिखने की ज़रूरत नहीं।</p>
+      <p class="text-sm text-slate-400">Speak about your work. Get an Ustad to vouch for you. Find jobs and keep your own work record.</p>
+      <button class="btn btn-ghost btn-sm text-slate-900" @click="speak('अपनी आवाज़ से अपनी पहचान बनाइए। माइक वाला बटन दबाइए और बोलिए।')"><i class="fa-solid fa-volume-high"></i> Listen in Hindi</button>
+    </section>
+    {{>p_onb}}
+    <section class="card space-y-2">
+      <h3 class="h-sec">Already registered?</h3>
+      <p class="text-sm text-slate-600">For this demo you can open a sample worker account instead of creating one.</p>
+      <template x-for="w in db.workers" :key="w.id">
+        <button class="w-full text-left card-flat flex items-center gap-2 min-h-[52px]" @click="pickWorker(w.id)">
+          <span class="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 font-black flex items-center justify-center shrink-0" x-text="initials(w.name)"></span>
+          <span class="flex-1 min-w-0"><b x-text="w.name"></b><br><span class="text-xs text-slate-500" x-text="w.trade + ', ' + w.location"></span></span>
+          <span class="chip bg-slate-100 text-slate-600" x-text="w.isDemo ? 'Sample' : 'Mine'"></span>
+        </button>
+      </template>
+    </section>
+  </div>
+</template>
+
+<!-- Signed-in worker home -->
+<template x-if="me">
+  <div class="space-y-4">
+    <section class="rounded-2xl bg-slate-900 text-white p-4 flex items-center gap-3">
+      <div class="w-14 h-14 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-xl font-black overflow-hidden shrink-0">
+        <img x-show="me.avatar" :src="me.avatar" alt="" class="w-full h-full object-cover"><span x-show="!me.avatar" x-text="initials(me.name)"></span></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm text-slate-300">Namaste</p>
+        <h1 class="text-xl font-extrabold truncate" x-text="me.name"></h1>
+        <p class="text-xs text-slate-400" x-text="me.trade + ' / ' + me.location + ' / ' + me.experienceYears + ' yrs'"></p>
+      </div>
+      <span class="chip bg-slate-700 text-amber-200" x-show="me.isDemo">Sample</span>
+    </section>
+
+    <section class="note" :class="isVerified(me) ? 'note-ok' : 'note-warn'">
+      <div class="flex items-start gap-3">
+        <i class="fa-solid text-xl mt-0.5" :class="isVerified(me) ? 'fa-circle-check' : 'fa-hourglass-half'"></i>
+        <div class="flex-1">
+          <b x-text="isVerified(me) ? 'An Ustad has endorsed your skills' : 'Your skills are not verified yet'"></b>
+          <p class="text-sm" x-show="!isVerified(me)">Show one skill on video and an Ustad will review it.</p>
+          <button class="btn btn-primary btn-sm mt-2" x-show="!isVerified(me)" @click="afInit(me.id); go('w_assess')"><i class="fa-solid fa-video"></i> <span x-text="tr('Take a skill test')"></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Things waiting for me -->
+    <section class="space-y-2" x-show="myApps().filter(a => a.status==='invited').length || myRecordsTodo().length || payTodo()">
+      <h2 class="h-sec">Needs your action</h2>
+      <template x-for="a in myApps().filter(a => a.status==='invited')" :key="a.id">
+        <button class="w-full text-left card-flat flex items-center gap-3 border-amber-300 bg-amber-50 min-h-[56px]" @click="go('w_job', {id: a.jobId})"><i class="fa-solid fa-envelope-open-text text-amber-600 text-xl"></i><span class="flex-1"><b>Job invitation</b><br><span class="text-sm" x-text="jb(a.jobId).title"></span></span><i class="fa-solid fa-chevron-right text-slate-400"></i></button>
+      </template>
+      <template x-for="r in myRecordsTodo()" :key="r.id">
+        <button class="w-full text-left card-flat flex items-center gap-3 min-h-[56px]" @click="go('w_record', {id: r.id})"><i class="fa-solid fa-clipboard-check text-emerald-600 text-xl"></i><span class="flex-1"><b x-text="recStatusLabel(r)"></b><br><span class="text-sm" x-text="r.title"></span></span><i class="fa-solid fa-chevron-right text-slate-400"></i></button>
+      </template>
+      <button class="w-full text-left card-flat flex items-center gap-3 min-h-[56px]" x-show="payTodo()" @click="tab('w_hisaab')"><i class="fa-solid fa-indian-rupee-sign text-amber-600 text-xl"></i><span class="flex-1"><b>Payment entries to confirm</b><br><span class="text-sm" x-text="payTodo() + ' waiting for you'"></span></span><i class="fa-solid fa-chevron-right text-slate-400"></i></button>
+    </section>
+
+    <section>
+      <h2 class="h-sec mb-2" x-text="tr('Quick actions')"></h2>
+      <div class="stat-grid grid grid-cols-2 gap-3">
+        <button class="card text-left min-h-[96px]" @click="tab('w_jobs')"><i class="fa-solid fa-briefcase text-2xl text-amber-500"></i><div class="font-extrabold mt-1" x-text="tr('Find Work')"></div><div class="text-xs text-slate-500"><span x-text="db.jobs.filter(j => j.status==='open').length"></span> open jobs</div></button>
+        <button class="card text-left min-h-[96px]" @click="tab('w_card')"><i class="fa-solid fa-id-card text-2xl text-emerald-600"></i><div class="font-extrabold mt-1" x-text="tr('My Hunar Card')"></div><div class="text-xs text-slate-500">QR for contractors</div></button>
+        <button class="card text-left min-h-[96px]" @click="tab('w_khata')"><i class="fa-solid fa-book text-2xl text-indigo-600"></i><div class="font-extrabold mt-1" x-text="tr('Kaam Ka Khata')"></div><div class="text-xs text-slate-500"><span x-text="completedOf(me.id).length"></span> verified jobs</div></button>
+        <button class="card text-left min-h-[96px]" @click="tab('w_hisaab')"><i class="fa-solid fa-indian-rupee-sign text-2xl text-slate-700"></i><div class="font-extrabold mt-1" x-text="tr('Mera Hisaab')"></div><div class="text-xs text-slate-500">Rs. due: <span x-text="inr(totalOutstanding(myPayRecords()))"></span></div></button>
+      </div>
+    </section>
+
+    <section class="space-y-2">
+      <h2 class="h-sec" x-text="tr('Updates')"></h2>
+      <p class="text-sm text-slate-500 card-flat" x-show="!eventsFor('worker', me.id).length">No updates yet. When an Ustad or contractor does something for you, it shows here.</p>
+      <template x-for="e in eventsFor('worker', me.id)" :key="e.id">
+        <button class="w-full text-left card-flat flex items-start gap-2" @click="e.view && go(e.view, e.params)"><i class="fa-solid fa-bell text-amber-500 mt-1"></i><span class="flex-1 text-sm"><span x-text="e.text"></span><br><span class="text-xs text-slate-400" x-text="timeAgo(e.at)"></span></span></button>
+      </template>
+    </section>
+
+    <button class="btn btn-ghost btn-lg" @click="tab('w_help')"><i class="fa-solid fa-hand-holding-heart"></i> Ask a Hunar Mitra for help</button>
+  </div>
+</template>

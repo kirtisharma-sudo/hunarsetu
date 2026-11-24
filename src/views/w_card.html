@@ -1,0 +1,95 @@
+<template x-if="!me"><div class="note note-warn">Create your profile on the Home tab first. <button class="font-bold underline" @click="tab('w_home')">Go to Home</button></div></template>
+
+<template x-if="me">
+  <div class="space-y-4">
+    <h1 class="text-xl font-extrabold" x-text="tr('My Hunar Card')"></h1>
+
+    <!-- The card -->
+    <section class="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 shadow-xl space-y-3">
+      <div class="flex items-center justify-between"><span class="text-[10px] font-black tracking-[0.2em] uppercase text-amber-300">HunarSetu Hunar Card</span><span class="chip bg-slate-700 text-amber-200" x-show="me.isDemo">Sample</span></div>
+      <div class="flex gap-3">
+        <div class="flex-1 min-w-0 space-y-1">
+          <div class="w-14 h-14 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-xl font-black overflow-hidden mb-2"><img x-show="me.avatar" :src="me.avatar" alt="" class="w-full h-full object-cover"><span x-show="!me.avatar" x-text="initials(me.name)"></span></div>
+          <h2 class="text-xl font-extrabold leading-tight" x-text="me.name"></h2>
+          <p class="text-sm text-slate-300" x-text="me.trade"></p>
+          <p class="text-xs text-slate-400"><i class="fa-solid fa-location-dot text-amber-400"></i> <span x-text="me.location"></span></p>
+          <p class="text-xs text-slate-400"><i class="fa-solid fa-briefcase text-amber-400"></i> <span x-text="me.experienceYears + ' years (self-declared)'"></span></p>
+        </div>
+        <button class="w-36 h-36 shrink-0 bg-white rounded-xl p-1.5 qrbox" @click="qrFull=true" x-html="qrFor(me)" aria-label="Show QR code full screen"></button>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="chip" :class="isVerified(me) ? 'bg-amber-300 text-slate-900' : 'bg-slate-700 text-slate-300'"><i class="fa-solid" :class="isVerified(me) ? 'fa-circle-check' : 'fa-hourglass-half'"></i><span x-text="isVerified(me) ? 'Ustad endorsed' : 'Not yet endorsed'"></span></span>
+        <span class="chip bg-slate-700 text-slate-200"><i class="fa-solid fa-book"></i><span x-text="completedOf(me.id).length + ' confirmed jobs'"></span></span>
+        <span class="chip bg-slate-700 text-slate-200" x-show="avgRating(me.id)"><i class="fa-solid fa-star text-amber-300"></i><span x-text="avgRating(me.id) + ' / 5'"></span></span>
+      </div>
+      <p class="text-[11px] text-slate-400 break-all">Scan to open the public verification page. It never shows your phone number.</p>
+    </section>
+
+    <div class="note note-warn text-sm" x-show="qrLocalWarn()"><b>This file is opened from your device.</b> The QR works for anyone who has this app file, but to open it from any phone, host this file online and put its web address in <i>Demo guide and settings</i>.</div>
+
+    <div class="grid grid-cols-3 gap-2">
+      <button class="btn btn-dark btn-sm" @click="shareCard(me)"><i class="fa-solid fa-share-nodes"></i> Share</button>
+      <button class="btn btn-ghost btn-sm" @click="copyText(cardUrl(me))"><i class="fa-solid fa-copy"></i> Copy</button>
+      <a class="btn btn-ghost btn-sm" :href="cardUrl(me)" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Open</a>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <button class="btn btn-ghost" @click="openProfile()"><i class="fa-solid fa-pen"></i> Edit profile</button>
+      <button class="btn btn-primary" @click="afInit(me.id); go('w_assess')"><i class="fa-solid fa-video"></i> <span x-text="tr('Take a skill test')"></span></button>
+    </div>
+
+    <!-- Three trust levels explained -->
+    <section class="card space-y-2">
+      <h3 class="h-sec">How your skills are checked</h3>
+      <div class="flex items-start gap-2 text-sm"><span class="chip bg-slate-100 text-slate-600 shrink-0">1</span><span><b>Basic video checks.</b> The app measures length, light and camera steadiness. This is not a safety or skill certificate.</span></div>
+      <div class="flex items-start gap-2 text-sm"><span class="chip bg-amber-100 text-amber-900 shrink-0">2</span><span><b>Ustad reviewed.</b> A master technician watched your video and endorsed the skill.</span></div>
+      <div class="flex items-start gap-2 text-sm"><span class="chip bg-emerald-100 text-emerald-800 shrink-0">3</span><span><b>Practically assessed.</b> The Ustad tested you in person.</span></div>
+    </section>
+
+    <section class="card space-y-2">
+      <h3 class="h-sec" x-text="tr('Skills')"></h3>
+      <template x-for="s in me.skills" :key="s">
+        <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0"><span class="font-bold" x-text="lang==='hi' ? skHi(s) : skName(s)"></span>
+          <span class="chip" :class="levelChip(skillLevel(me.id, s).level).cls"><i class="fa-solid" :class="levelChip(skillLevel(me.id, s).level).icon"></i><span x-text="lang==='hi' ? levelChip(skillLevel(me.id, s).level).hi : levelChip(skillLevel(me.id, s).level).en"></span></span></div>
+      </template>
+      <p class="text-sm text-slate-500" x-show="!me.skills.length">No skills added. Edit your profile to add them.</p>
+    </section>
+
+    <section class="card space-y-2">
+      <h3 class="h-sec">Ustad endorsements</h3>
+      <p class="text-sm text-slate-500" x-show="!endorsementsOf(me.id).length">No endorsement yet. Send a skill video to get one.</p>
+      <template x-for="e in endorsementsOf(me.id)" :key="e.id">
+        <div class="card-flat space-y-1">
+          <div class="flex items-center justify-between gap-2"><b x-text="skName(e.skillId)"></b><span class="chip" :class="levelChip(e.level).cls" x-text="levelChip(e.level).en"></span></div>
+          <p class="text-sm text-slate-600">By <b x-text="ust(e.ustadId).name"></b> (<span x-text="ust(e.ustadId).title + ', ' + ust(e.ustadId).experienceYears + ' yrs'"></span>) on <span x-text="fdate(e.date)"></span><span class="chip bg-slate-100 text-slate-600 ml-1" x-show="e.sample">Sample</span></p>
+          <p class="text-sm italic" x-show="e.comment" x-text="'“' + e.comment + '”'"></p>
+          <audio controls class="w-full" x-show="e.audioId && media(e.audioId)" :src="media(e.audioId)"></audio>
+        </div>
+      </template>
+    </section>
+
+    <section class="card space-y-2">
+      <h3 class="h-sec">My skill tests</h3>
+      <p class="text-sm text-slate-500" x-show="!assessmentsOf(me.id).length">No tests sent yet.</p>
+      <template x-for="a in assessmentsOf(me.id)" :key="a.id">
+        <div class="card-flat space-y-2">
+          <div class="flex items-center justify-between gap-2"><b x-text="skName(a.skillId)"></b><span class="chip" :class="asmStatusCls(a)" x-text="asmStatusLabel(a)"></span></div>
+          <p class="text-xs text-slate-500">Sent <span x-text="timeAgo(a.submittedAt)"></span> to <span x-text="ust(a.ustadId) && ust(a.ustadId).name"></span><span x-show="a.sample"> / Sample record</span></p>
+          <div class="note note-warn text-sm" x-show="a.review && a.status!=='approved'"><b x-text="a.status==='reassessment_requested' ? 'The Ustad wants to see you in person: ' : 'The Ustad says: '"></b><span x-text="a.review && a.review.comment"></span></div>
+          <audio controls class="w-full" x-show="a.review && a.review.audioId && media(a.review.audioId)" :src="a.review && media(a.review.audioId)"></audio>
+          <video controls playsinline preload="metadata" class="w-full rounded-lg bg-black max-h-48" x-show="a.videoId && media(a.videoId)" :src="media(a.videoId)"></video>
+          <div class="flex gap-2"><button class="btn btn-ghost btn-sm" x-show="['rejected','reassessment_requested'].includes(a.status)" @click="afInit(me.id); af.trade=sk(a.skillId) ? sk(a.skillId).trade : me.trade; af.skillId=a.skillId; go('w_assess')"><i class="fa-solid fa-rotate"></i> Try again</button>
+            <button class="btn btn-ghost btn-sm text-red-700" x-show="!a.sample && a.status!=='approved'" @click="delAssessment(a.id)"><i class="fa-solid fa-trash"></i> Delete</button></div>
+        </div>
+      </template>
+    </section>
+
+    <section class="card space-y-2" x-show="me.voice">
+      <h3 class="h-sec">My voice introduction</h3>
+      <audio controls class="w-full" x-show="me.voice && me.voice.audioId && media(me.voice.audioId)" :src="me.voice && media(me.voice.audioId)"></audio>
+      <p class="text-sm" lang="hi" x-text="me.voice && me.voice.transcript"></p>
+      <p class="text-xs text-slate-500" x-text="me.voice && transLabel(me.voice.source)"></p>
+    </section>
+
+    <button class="btn btn-ghost btn-sm w-full text-red-700" x-show="!me.isDemo" @click="deleteProfile()"><i class="fa-solid fa-trash"></i> Delete my profile and data</button>
+  </div>
+</template>

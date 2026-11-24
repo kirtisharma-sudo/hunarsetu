@@ -1,0 +1,84 @@
+<!-- Toast -->
+<div x-show="toastMsg" x-transition.opacity class="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] w-[92%] max-w-sm px-4 py-3 rounded-xl text-sm font-bold shadow-2xl flex items-start gap-2"
+  :class="toastKind==='err' ? 'bg-red-700 text-white' : 'bg-slate-900 text-white'" role="status" aria-live="polite">
+  <i class="fa-solid mt-0.5" :class="toastKind==='err' ? 'fa-triangle-exclamation' : 'fa-circle-check text-emerald-400'"></i><span x-text="toastMsg"></span>
+</div>
+
+<!-- Confirm dialog -->
+<div x-show="dlg" x-transition.opacity class="fixed inset-0 z-[70] bg-slate-900/70 flex items-end md:items-center justify-center p-3" @keydown.escape.window="dlg=null" role="dialog" aria-modal="true">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-5" x-show="dlg" @click.outside="dlg=null">
+    <h3 class="text-lg font-extrabold text-slate-900" x-text="dlg && dlg.title"></h3>
+    <p class="text-sm text-slate-600 mt-2" x-text="dlg && dlg.body" x-show="dlg && dlg.body"></p>
+    <div class="grid grid-cols-2 gap-2 mt-5">
+      <button class="btn btn-ghost" @click="dlg=null">Cancel</button>
+      <button class="btn" :class="dlg && dlg.danger ? 'btn-red' : 'btn-green'" @click="dlgOk()" x-text="dlg && dlg.ok"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Full-screen QR -->
+<div x-show="qrFull && me" x-transition.opacity class="fixed inset-0 z-[70] bg-slate-900/90 flex flex-col items-center justify-center p-6" @click="qrFull=false">
+  <div class="bg-white rounded-2xl p-4 w-full max-w-xs"><div class="qrbox" x-html="me ? qrFor(me) : ''" role="img" :aria-label="'QR code for ' + (me && me.name)"></div></div>
+  <p class="text-white text-sm mt-4 text-center">Tap anywhere to close</p>
+</div>
+
+<!-- Demo guide + settings drawer -->
+<div x-show="drawer" x-transition.opacity class="fixed inset-0 z-[65] bg-slate-900/70" @click.self="drawer=false" @keydown.escape.window="drawer=false">
+  <aside class="absolute right-0 top-0 bottom-0 w-[92%] max-w-sm bg-slate-50 overflow-y-auto p-4 space-y-4" role="dialog" aria-label="Demo guide and settings">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-extrabold">Demo guide and settings</h2>
+      <button class="w-10 h-10 rounded-lg bg-white border border-slate-300" @click="drawer=false" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="note note-warn">
+      <b>About this demo.</b> Role switching is only a demo shortcut. It is not a login and does not make someone a real Ustad.
+      Anything marked <b>Sample</b> is made-up data for the demo and is not real verification.
+    </div>
+
+    <section class="card space-y-2">
+      <h3 class="h-sec">Ramesh Kumar journey (9 steps)</h3>
+      <p class="text-sm text-slate-600">Each step opens the right role. A tick appears when the step is done in the shared data.</p>
+      <ol class="space-y-1.5">
+        <template x-for="(s, i) in storyChecklist()" :key="s.n">
+          <li>
+            <button class="w-full text-left flex items-center gap-2.5 rounded-lg px-2 py-2 border" @click="jumpStory(s)"
+              :class="s.done ? 'bg-emerald-50 border-emerald-200' : (i===storyNextIdx() ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200')">
+              <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0" :class="s.done ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-amber-400'">
+                <i class="fa-solid fa-check" x-show="s.done"></i><span x-show="!s.done" x-text="s.n"></span>
+              </span>
+              <span class="flex-1 text-sm font-semibold" x-text="s.t"></span>
+              <span class="chip bg-slate-100 text-slate-600" x-text="ROLE_INFO[s.who].en"></span>
+            </button>
+          </li>
+        </template>
+      </ol>
+      <button class="btn btn-ghost btn-sm w-full" @click="startRamesh()"><i class="fa-solid fa-user-plus"></i> Start as a new worker (Ramesh)</button>
+    </section>
+
+    <section class="card space-y-2">
+      <h3 class="h-sec">Use a sample worker account (demo)</h3>
+      <template x-for="w in db.workers.filter(x => x.isDemo)" :key="w.id">
+        <button class="w-full text-left card-flat flex items-center gap-2" @click="pickWorker(w.id); goAs('worker','w_home')">
+          <span class="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 font-black flex items-center justify-center" x-text="initials(w.name)"></span>
+          <span class="flex-1"><b x-text="w.name"></b><br><span class="text-xs text-slate-500" x-text="w.trade + ', ' + w.location"></span></span>
+          <span class="chip bg-slate-100 text-slate-600">Sample</span>
+        </button>
+      </template>
+      <button class="btn btn-ghost btn-sm w-full" x-show="session.workerId" @click="logoutWorker(); drawer=false"><i class="fa-solid fa-right-from-bracket"></i> Leave worker account</button>
+    </section>
+
+    <section class="card space-y-3">
+      <h3 class="h-sec">Optional services</h3>
+      <p class="text-sm text-slate-600">The app works without any of these. If left empty, speech and video checks use the fallbacks described on each screen.</p>
+      <div><label class="lbl" for="s1">Public link base (for QR codes)</label><input id="s1" class="inp" placeholder="https://your-site.example/hunarsetu.html" x-model.trim="settings.baseUrl"><p class="text-xs text-slate-500 mt-1">Only needed if you open the app from a file or a different address. When the app is opened from its deployed https address, QR codes use that address automatically. Use the full https address of the page (for example https://yourname.github.io/hunarsetu/).</p><p class="err" x-show="settings.baseUrl && !/^https:\/\//i.test(settings.baseUrl)">QR codes only work from other phones with a public https address. This value is ignored unless it starts with http:// or https://.</p></div>
+      <div><label class="lbl" for="s2">Speech-to-text endpoint</label><input id="s2" class="inp" placeholder="https://..." x-model.trim="settings.sttUrl"><p class="text-xs text-slate-500 mt-1">POST audio + lang, returns {"text": "..."}.</p></div>
+      <div><label class="lbl" for="s3">Vision screening endpoint</label><input id="s3" class="inp" placeholder="https://..." x-model.trim="settings.visionUrl"><p class="text-xs text-slate-500 mt-1">POST video, returns {"observations":[{"label","status","note"}]}.</p></div>
+    </section>
+
+    <section class="card space-y-2">
+      <h3 class="h-sec">Data on this phone</h3>
+      <button class="btn btn-ghost btn-sm w-full" @click="exportData()"><i class="fa-solid fa-download"></i> Download data (JSON)</button>
+      <button class="btn btn-red btn-sm w-full" @click="resetDemo()"><i class="fa-solid fa-rotate-left"></i> Reset demo</button>
+    </section>
+  </aside>
+</div>

@@ -1,0 +1,30 @@
+<button class="text-sm font-bold text-slate-600" @click="back()"><i class="fa-solid fa-arrow-left"></i> <span x-text="tr('Back')"></span></button>
+<section class="card space-y-4 form-narrow">
+  <h1 class="text-xl font-extrabold">Edit my profile</h1>
+  <div class="flex items-center gap-3">
+    <div class="w-16 h-16 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xl font-black overflow-hidden shrink-0"><img x-show="pf.avatar" :src="pf.avatar" alt="Photo" class="w-full h-full object-cover"><span x-show="!pf.avatar" x-text="initials(pf.name)"></span></div>
+    <div class="flex flex-col gap-1"><label class="btn btn-ghost btn-sm cursor-pointer"><i class="fa-solid fa-camera"></i> Change photo<input type="file" accept="image/*" capture="user" class="hidden" @change="pfAvatar($event)"></label><button class="text-xs font-bold text-red-700" x-show="pf.avatar" @click="pf.avatar=''">Remove photo</button></div>
+  </div>
+  <div><label class="lbl" for="p_name" x-text="tr('Name')"></label><input id="p_name" class="inp" x-model="pf.name"><p class="err" x-show="errs.name" x-text="errs.name"></p></div>
+  <div><label class="lbl" for="p_phone">Phone (optional, 10 digits)</label><input id="p_phone" class="inp" inputmode="numeric" maxlength="10" x-model="pf.phone"><p class="err" x-show="errs.phone" x-text="errs.phone"></p><p class="text-xs text-slate-500 mt-1">Never shown on your public QR page.</p></div>
+  <div><span class="lbl" x-text="tr('Trade')"></span><div class="flex flex-wrap gap-2"><template x-for="t in TRADES" :key="t"><button type="button" class="pick" :class="pf.trade===t && 'pick-on'" @click="pf.trade=t"><i class="fa-solid" :class="TRADE_ICON[t]"></i><span x-text="t"></span></button></template></div></div>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="lbl" for="p_exp" x-text="tr('Experience (years)')"></label><input id="p_exp" class="inp" type="number" min="0" max="60" x-model="pf.experienceYears"><p class="err" x-show="errs.experienceYears" x-text="errs.experienceYears"></p></div>
+    <div><label class="lbl" for="p_loc" x-text="tr('Area where you live')"></label><input id="p_loc" class="inp" list="localities" x-model="pf.location"><p class="err" x-show="errs.location" x-text="errs.location"></p></div>
+  </div>
+  <div><span class="lbl" x-text="tr('Skills')"></span>
+    <div class="flex flex-wrap gap-2">
+      <template x-for="s in skillsOfTrade(pf.trade)" :key="s.id"><button type="button" class="pick" :class="pf.skills.includes(s.id) && 'pick-on'" @click="toggleIn(pf.skills, s.id)"><i class="fa-solid" :class="pf.skills.includes(s.id) ? 'fa-square-check' : 'fa-square'"></i><span x-text="s.name"></span></button></template>
+      <template x-for="s in pf.skills.filter(x => x.startsWith('custom:'))" :key="s"><button type="button" class="pick pick-on" @click="toggleIn(pf.skills, s)"><i class="fa-solid fa-square-check"></i><span x-text="skName(s)"></span></button></template>
+    </div>
+    <div class="flex gap-2 mt-2"><input class="inp" placeholder="Another skill (optional)" x-model="customSkill" @keydown.enter.prevent="addCustomSkill(pf)"><button type="button" class="btn btn-ghost" @click="addCustomSkill(pf)" aria-label="Add skill"><i class="fa-solid fa-plus"></i></button></div>
+    <p class="text-xs text-slate-500 mt-1">Removing a skill does not remove an Ustad's endorsement.</p>
+  </div>
+  <div><span class="lbl" x-text="tr('Languages')"></span><div class="flex flex-wrap gap-2"><template x-for="l in ['Hindi','English','Punjabi','Urdu','Haryanvi','Bhojpuri']" :key="l"><button type="button" class="pick" :class="pf.languages.includes(l) && 'pick-on'" @click="toggleIn(pf.languages, l)" x-text="l"></button></template></div><p class="err" x-show="errs.languages" x-text="errs.languages"></p></div>
+  <div class="grid grid-cols-2 gap-3">
+    <div><label class="lbl" for="p_av">Availability</label><select id="p_av" class="inp" x-model="pf.availability"><option value="available">Available now</option><option value="soon">Available soon</option><option value="busy">Busy</option></select></div>
+    <div><label class="lbl" for="p_rad">Work radius</label><select id="p_rad" class="inp" x-model.number="pf.radiusKm"><option value="5">5 km</option><option value="10">10 km</option><option value="15">15 km</option><option value="25">25 km</option><option value="40">40 km</option></select></div>
+  </div>
+  <div><label class="lbl" for="p_cp">Contact preference</label><select id="p_cp" class="inp" x-model="pf.contactPref"><option value="whatsapp">WhatsApp</option><option value="call">Phone call</option><option value="via_mitra">Through my Hunar Mitra</option></select></div>
+  <button class="btn btn-green btn-lg" @click="saveProfile()"><i class="fa-solid fa-check"></i> <span x-text="tr('Save')"></span></button>
+</section>

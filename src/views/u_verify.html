@@ -1,0 +1,22 @@
+<section><h1 class="text-xl font-extrabold" x-text="tr('Verify Skills')"></h1><p class="text-sm text-slate-600">Your past decisions. You can withdraw an endorsement if you made a mistake.</p></section>
+
+<section class="space-y-2">
+  <h2 class="h-sec">Endorsements I gave</h2>
+  <div class="card text-center text-slate-500" x-show="!db.endorsements.filter(e => e.ustadId===ustad.id && e.active).length">No active endorsements.</div>
+  <template x-for="e in byDate(db.endorsements.filter(e => e.ustadId===ustad.id && e.active), 'date')" :key="e.id">
+    <article class="card space-y-1">
+      <div class="flex items-start justify-between gap-2"><div><b x-text="wk(e.workerId) && wk(e.workerId).name"></b><div class="text-sm text-slate-600" x-text="skName(e.skillId) + ' / ' + fdate(e.date)"></div></div><span class="chip" :class="levelChip(e.level).cls" x-text="levelChip(e.level).en"></span></div>
+      <p class="text-sm italic" x-show="e.comment" x-text="'“' + e.comment + '”'"></p>
+      <audio controls class="w-full" x-show="e.audioId && media(e.audioId)" :src="media(e.audioId)"></audio>
+      <button class="btn btn-ghost btn-sm text-red-700" @click="revokeEndorsement(e.id)"><i class="fa-solid fa-rotate-left"></i> Withdraw</button>
+    </article>
+  </template>
+</section>
+
+<section class="space-y-2">
+  <h2 class="h-sec">Not approved or sent back</h2>
+  <p class="text-sm text-slate-500 card-flat" x-show="!ustadDone('rejected').length && !db.skill_assessments.some(a => a.ustadId===ustad.id && a.status==='reassessment_requested')">None.</p>
+  <template x-for="a in db.skill_assessments.filter(a => a.ustadId===ustad.id && ['rejected','reassessment_requested'].includes(a.status))" :key="a.id">
+    <button class="w-full text-left card-flat flex items-center gap-2" @click="openReview(a.id)"><span class="flex-1"><b x-text="wk(a.workerId).name"></b><br><span class="text-sm text-slate-600" x-text="skName(a.skillId)"></span></span><span class="chip" :class="asmStatusCls(a)" x-text="asmStatusLabel(a)"></span></button>
+  </template>
+</section>

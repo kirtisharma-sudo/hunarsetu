@@ -1,0 +1,38 @@
+<section class="rounded-2xl bg-slate-900 text-white p-4 flex items-center gap-3">
+  <div class="w-14 h-14 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center text-xl font-black" x-text="initials(contractor.name)"></div>
+  <div class="flex-1"><h1 class="text-xl font-extrabold" x-text="contractor.name"></h1><p class="text-sm text-slate-300" x-text="contractor.company + ' / ' + contractor.location"></p></div>
+</section>
+
+<div class="stat-grid grid grid-cols-2 gap-3">
+  <button class="card text-left" @click="tab('c_apps')"><div class="text-3xl font-extrabold text-amber-600" x-text="appsForContractor('applied').length"></div><div class="text-sm font-bold">New applications</div></button>
+  <button class="card text-left" @click="tab('c_history')"><div class="text-3xl font-extrabold text-indigo-600" x-text="myRecords().filter(r => r.status!=='completed').length"></div><div class="text-sm font-bold">Jobs in progress</div></button>
+  <button class="card text-left" @click="tab('c_history')"><div class="text-3xl font-extrabold text-emerald-600" x-text="myRecords().filter(r => r.status==='evidence_submitted').length"></div><div class="text-sm font-bold">Waiting for your confirmation</div></button>
+  <button class="card text-left" @click="tab('c_pay')"><div class="text-2xl font-extrabold text-slate-800" x-text="inr(totalOutstanding(contractorPayRecords()))"></div><div class="text-sm font-bold">Payments still due</div></button>
+</div>
+
+<button class="btn btn-primary btn-lg" @click="jfInit(null); tab('c_post'); jfInit(null)"><i class="fa-solid fa-square-plus"></i> Post a new job</button>
+
+<section class="space-y-2">
+  <h2 class="h-sec">My jobs</h2>
+  <div class="card text-center text-slate-500" x-show="!myJobs().length"><i class="fa-solid fa-briefcase text-3xl text-slate-300"></i><p class="font-bold mt-2">No jobs posted</p><p class="text-sm">Post a job and nearby workers will see it.</p></div>
+  <template x-for="j in myJobs()" :key="j.id">
+    <article class="card space-y-2">
+      <div class="flex items-start justify-between gap-2"><div class="min-w-0"><b x-text="j.title"></b><div class="text-sm text-slate-600" x-text="j.trade + ' / ' + j.location + ' / ' + payText(j)"></div></div>
+        <span class="chip shrink-0" :class="j.status==='open' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'" x-text="j.status"></span></div>
+      <div class="flex flex-wrap gap-1 text-xs"><span class="chip bg-slate-100 text-slate-700" x-text="jobApps(j.id).length + ' applications'"></span><span class="chip bg-slate-100 text-slate-700" x-text="jobApps(j.id).filter(a => a.status==='assigned').length + ' / ' + j.workersNeeded + ' assigned'"></span><span class="chip bg-slate-100 text-slate-500" x-show="j.isDemo">Sample</span></div>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="btn btn-ghost btn-sm" @click="tab('c_apps')">Applications</button>
+        <button class="btn btn-ghost btn-sm" @click="findFromJob(j.id); tab('c_find')">Find workers</button>
+        <button class="btn btn-ghost btn-sm" @click="jfInit(j); go('c_post')">Edit</button>
+        <button class="btn btn-ghost btn-sm" @click="toggleJobStatus(j.id)" x-text="j.status==='open' ? 'Close job' : 'Reopen'"></button>
+      </div>
+      <button class="text-xs font-bold text-red-700" @click="deleteJob(j.id)"><i class="fa-solid fa-trash"></i> Delete job</button>
+    </article>
+  </template>
+</section>
+
+<section class="space-y-2">
+  <h2 class="h-sec">Updates</h2>
+  <p class="text-sm text-slate-500 card-flat" x-show="!eventsFor('contractor', contractor.id).length">No updates yet.</p>
+  <template x-for="e in eventsFor('contractor', contractor.id)" :key="e.id"><button class="w-full text-left card-flat text-sm" @click="e.view && go(e.view, e.params)"><i class="fa-solid fa-bell text-amber-500"></i> <span x-text="e.text"></span> <span class="text-xs text-slate-400" x-text="' / ' + timeAgo(e.at)"></span></button></template>
+</section>
