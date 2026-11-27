@@ -75,7 +75,12 @@ let lastN = 0; const ok = (c, m) => { if (c) { pass++; console.log('PASS ' + m);
   ok(await D((d, id) => d.openJobsForWorker().some((j) => j.id === id), jobId), 'job visible in Find Work');
   ok(await D((d, id) => d.openJobsForWorker()[0].id === id || d.openJobsForWorker()[0].fit.score >= d.openJobsForWorker().find((j) => j.id === id).fit.score, jobId), 'job ranked by match score');
   await D((d, id) => d.applyJob(id), jobId); ok(await D((d, id) => d.appFor(id, d.me.id).status === 'applied', jobId), 'Ramesh applied');
-  await D((d, id) => d.applyJob(id), jobId); ok(true, 'double apply guarded');
+  await D((d, id) => d.applyJob(id), jobId);
+  const dup = await D((d, id) => {
+    const a = d.appFor(id, d.me.id);
+    return { n: d.db.job_applications.filter((x) => x.jobId === id && x.workerId === d.me.id).length, status: a ? a.status : null };
+  }, jobId);
+  ok(dup.n === 1 && dup.status === 'applied', 'double apply guarded: still exactly one application');
   await D((d) => d.setRole('contractor')); ok(await D((d, id) => d.appsForContractor('applied').some((a) => a.jobId === id), jobId), 'contractor sees application');
   const appId = await D((d, id) => d.db.job_applications.find((a) => a.jobId === id).id, jobId);
   await D((d, a) => d.setApp(a, 'shortlisted'), appId); await D((d, a) => d.setApp(a, 'accepted'), appId);
