@@ -10,7 +10,6 @@ A voice-first prototype that gives skilled informal workers a portable, human-ve
 
 ![Status](https://img.shields.io/badge/status-working%20prototype-amber)
 ![Stack](https://img.shields.io/badge/stack-HTML%20%7C%20Tailwind%20%7C%20Alpine.js-blue)
-![Backend](https://img.shields.io/badge/backend-none%20(browser--local)-lightgrey)
 ![Tests](https://img.shields.io/badge/browser%20tests-59%20journey%20checks-green)
 
 </div>
@@ -44,9 +43,9 @@ A voice-first prototype that gives skilled informal workers a portable, human-ve
 | Item | Link |
 |---|---|
 | Problem brief | [docs/problem-brief.md](docs/problem-brief.md) |
-| GitHub repository | _add repository URL_ |
-| Live demo | _add deployed HTTPS URL_ |
-| Demo video | _add video URL_ |
+| GitHub repository | https://github.com/kirtisharma-sudo/hunarsetu |
+| Live demo | https://kirtisharma-sudo.github.io/hunarsetu/ |
+| Demo video | https://drive.google.com/file/d/1UB8kRK9wP8RiSVYZin7pEF-3gI8oEwuJ/view?usp=sharing |
 | Explanation of value | [Our solution](#our-solution) and [docs/problem-brief.md](docs/problem-brief.md) |
 
 ## Introduction
@@ -127,23 +126,20 @@ flowchart LR
 
 Screenshots have not been added yet. Capture them from the running app and place them in `docs/screenshots/`.
 
-| Screen | File to add |
+| Screen | Prototype |
 |---|---|
-| Worker voice onboarding | _docs/screenshots/worker-onboarding.png (placeholder)_ |
-| Hunar Card with QR | _docs/screenshots/hunar-card.png (placeholder)_ |
-| Ustad review | _docs/screenshots/ustad-review.png (placeholder)_ |
-| Contractor Find Workers | _docs/screenshots/contractor-find.png (placeholder)_ |
-| Desktop layout | _docs/screenshots/desktop.png (placeholder)_ |
+| Voice-Based Worker Onboarding (Hindi) | <img width="1790" height="863" alt="image" src="https://github.com/user-attachments/assets/c32e388d-e66c-49c1-a6ec-9d256d88ba2d" /> |
+| Hunar Card with QR |<img width="1788" height="833" alt="image" src="https://github.com/user-attachments/assets/c60834c4-bc40-414c-990b-a6f5a143502d" />|
+| Ustad review | <img width="1795" height="837" alt="image" src="https://github.com/user-attachments/assets/d3d56d8f-128d-4cd1-8de0-38314a134de4" /> |
+| Contractor Find Workers | <img width="1791" height="837" alt="image" src="https://github.com/user-attachments/assets/034e4b4f-71ea-42e7-9953-116c66bba696" />|
 
 ## Demo
 
-- **Live demo:** _add deployed HTTPS URL_
-- **Demo video:** _add video URL_
+- **Live demo:** https://kirtisharma-sudo.github.io/hunarsetu/
+- **Demo video:** https://drive.google.com/file/d/1UB8kRK9wP8RiSVYZin7pEF-3gI8oEwuJ/view?usp=sharing 
 - **Run locally:** open `index.html` in Chrome, then follow [docs/demo-script.md](docs/demo-script.md). The in-app Demo guide (sliders button, top right) lists the same nine steps and jumps to the right role.
 
 ## Technology
-
-Based on what the code actually uses:
 
 | Layer | Choice |
 |---|---|
@@ -228,7 +224,6 @@ The build script reads `node_modules` from the project folder, or from the path 
 The app is one static file, so any static host works.
 
 - **GitHub Pages:** Settings, Pages, deploy from branch `main`, root folder.
-- **Netlify Drop:** drag `index.html` onto app.netlify.com/drop.
 
 QR codes encode `<base address>#/v/<id>?d=<snapshot>`. When the app is opened from its deployed HTTPS address, that address is used automatically. If you open it from a file or another address, enter the full HTTPS address in **Demo guide, Optional services, Public link base**; values that do not start with http:// or https:// are ignored.
 
